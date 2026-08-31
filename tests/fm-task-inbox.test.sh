@@ -253,7 +253,7 @@ test_handled_mv_dedups_by_sequence() {
 # session, so the acknowledged record must stay readable rather than being
 # consumed by the ack, and the newest marker must win over an earlier one.
 test_handled_record_body_survives_the_ack() {
-  local state rec body newest
+  local state rec body newest rec_file
   state="$TMP_ROOT/handled-body/state"; mkdir -p "$state"
   rec=$(inbox_lib "$state" fm_task_inbox_write "$state" t1 "project-issue: #42
 Work the fix under that issue.")
@@ -276,7 +276,13 @@ That issue was closed as a duplicate; this task is tracked here now.")
   [ "$rec" = "$state/t1.inbox/002.msg" ] \
     || fail "a later marker steer must take the next sequence, got $rec"
   mv "$rec" "$state/t1.inbox/handled/"
-  newest=$(ls "$state/t1.inbox/handled/" | sort | tail -n 1)
+  # Zero-padded sequences sort lexically, so the last glob match is the newest.
+  newest=""
+  for rec_file in "$state/t1.inbox/handled/"*.msg; do
+    [ -e "$rec_file" ] || break
+    newest=${rec_file##*/}
+  done
+  [ -n "$newest" ] || fail "handled/ must hold at least one record to supersede"
   [ "$newest" = "002.msg" ] \
     || fail "the newest handled marker must be the highest sequence, got $newest"
   body=$(inbox_lib "$state" fm_task_inbox_body "$state/t1.inbox/handled/$newest")

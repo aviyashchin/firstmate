@@ -394,6 +394,7 @@ STUB
         assert_grep "Do not touch that pull request body while the run is active" "$delivered_project" \
           "$mode: promoted worker was invited to edit the pull request body mid-run" ;;
       direct-PR)
+        # shellcheck disable=SC2016 # Literal generated-contract text; backticks are markup in the emitted instructions.
         assert_grep 'in the body of the pull request you open with `gh-axi`' "$delivered_project" \
           "$mode: promoted worker was not told to link the issue from the PR it opens" ;;
       local-only)
