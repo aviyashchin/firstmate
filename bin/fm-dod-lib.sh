@@ -15,20 +15,53 @@
 # Every heredoc here stays outside a command substitution: `VAR=$(cat <<EOF ...)`
 # breaks parsing of the whole file on Bash 3.2 (tests/fm-brief.test.sh).
 
-# fm_project_instructions_block prints the block on stdout with no trailing blank
-# line. A project's own committed AGENTS.md or CLAUDE.md binds the work done in
-# it, so every worker that edits files - freshly briefed or promoted in place -
-# must be told to read it and to stop on a conflict rather than choose silently.
-# It also owns the one moment an issue can be linked: firstmate creates or reuses
-# the issue before the spawn, and only the worker is present once a pull request
-# exists, on every delivery mode including the pipeline's.
-fm_project_instructions_block() {
-  cat <<'EOF'
+# fm_project_instructions_block <no-mistakes|direct-PR|local-only> <task-id>
+# prints the block on stdout with no trailing blank line, and refuses an unknown
+# mode rather than rendering a contract for one. A project's own committed
+# AGENTS.md or CLAUDE.md binds the work done in it, so every worker that edits
+# files - freshly briefed or promoted in place - must be told to read it and to
+# stop on a conflict rather than choose silently. The one carve-out is the branch
+# NAME: `fm/<id>` is firstmate's own mechanical identity, created by the brief's
+# Setup step and assumed by bin/fm-merge-local.sh and bin/fm-review-diff.sh, so a
+# project's branch-naming convention cannot be allowed to stall every such task on
+# needs-decision or rename the branch out from under those consumers.
+# The block also owns the one moment an issue can be linked: firstmate creates or
+# reuses the issue before the spawn, and only the worker is present once a pull
+# request exists. That moment differs per mode, so the instruction names the exact
+# lever for each: the `--intent` the pipeline derives its PR body from, the PR the
+# direct-PR worker opens itself, and no PR at all on local-only.
+fm_project_instructions_block() {  # <mode> <task-id>
+  local mode=$1 id=$2
+  case "$mode" in
+    no-mistakes|direct-PR|local-only) ;;
+    *)
+      echo "error: fm_project_instructions_block: unknown delivery mode '$mode'" >&2
+      return 1 ;;
+  esac
+  cat <<EOF
 # Project instructions
-If the project carries its own `AGENTS.md` or `CLAUDE.md`, read it before you edit any file and follow it for this task, including any issue, branch, evidence, and review requirements it states.
-Where it conflicts with the task instructions firstmate gave you, append `needs-decision: {the conflict}` and stop as rule 6 requires, rather than choosing between them yourself.
-If firstmate named an issue for this task, make sure any pull request this task produces links that issue before you report that pull request done.
+If the project carries its own \`AGENTS.md\` or \`CLAUDE.md\`, read it before you edit any file and follow it for this task, including any issue, branch, evidence, and review requirements it states.
+Where it conflicts with the task instructions firstmate gave you, append \`needs-decision: {the conflict}\` and stop as rule 6 requires, rather than choosing between them yourself.
+Your branch name \`fm/$id\` is the single exception: it is firstmate's own mechanical identity, owned by these task instructions, and a project's branch-naming convention does not override it. Keep \`fm/$id\`, and do not report that naming difference as a conflict. Every other project-instruction conflict, including any other branch requirement, still stops.
 EOF
+  case "$mode" in
+    direct-PR)
+      cat <<'EOF'
+If firstmate named issue #N for this task, put an explicit same-repository reference to it (`Closes #N`) in the body of the pull request you open with `gh-axi`, and confirm the body carries it before you append `done: PR {url}`.
+EOF
+      ;;
+    local-only)
+      cat <<'EOF'
+This task opens no pull request, so there is no issue link for you to make. If firstmate named an issue for this task, it is linked later, from the pull request this branch eventually reaches.
+EOF
+      ;;
+    no-mistakes)
+      cat <<'EOF'
+If firstmate named issue #N for this task, the pipeline's pull request must link it, and the pipeline derives that pull request body from your `--intent`: carry an explicit same-repository reference (`Closes #N`) in the `--intent` you give /no-mistakes.
+Once that pull request exists, read its body with `gh-axi` and, if the reference is missing, add it with `gh-axi` before you append your final `done:` line. Editing a pull request body is not a code change and is not the hand-editing an active run forbids.
+EOF
+      ;;
+  esac
 }
 
 fm_dod_block() {  # <mode> <task-id>

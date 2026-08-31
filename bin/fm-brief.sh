@@ -396,7 +396,7 @@ case "$MODE" in
     ;;
 esac
 DOD=$(fm_dod_block "$MODE" "$ID") || exit 1
-PROJECT_INSTRUCTIONS=$(fm_project_instructions_block) || exit 1
+PROJECT_INSTRUCTIONS=$(fm_project_instructions_block "$MODE" "$ID") || exit 1
 
 cat > "$BRIEF" <<EOF
 You are a crewmate: an autonomous worker agent managed by firstmate. Work on your own; do not wait for a human.

@@ -359,6 +359,22 @@ STUB
       || fail "$mode: promoted worker was not told to read the project's own agent instructions"
     cmp -s "$brief_project" "$delivered_project" \
       || fail "$mode: promotion and ordinary brief generation delivered different project instructions"
+    assert_grep "Your branch name \`fm/$id\` is the single exception" "$delivered_project" \
+      "$mode: promoted worker's project instructions did not exempt its own fm/$id branch name"
+
+    # The one moment an issue can be linked differs per mode, so the promoted
+    # worker must receive its own mode's lever, not a generic sentence.
+    case "$mode" in
+      no-mistakes)
+        assert_grep 'in the `--intent` you give /no-mistakes' "$delivered_project" \
+          "$mode: promoted worker was not told to seed the pipeline PR body through --intent" ;;
+      direct-PR)
+        assert_grep 'in the body of the pull request you open with `gh-axi`' "$delivered_project" \
+          "$mode: promoted worker was not told to link the issue from the PR it opens" ;;
+      local-only)
+        assert_grep "This task opens no pull request, so there is no issue link for you to make." "$delivered_project" \
+          "$mode: promoted worker was not told that local-only produces no pull request to link" ;;
+    esac
   done
 
   payload="$TMP_ROOT/promote-dod/payload-promote-dod-no-mistakes"
