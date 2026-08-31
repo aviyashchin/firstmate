@@ -31,8 +31,12 @@
 # lever for each: the `--intent` the pipeline derives its PR body from, repaired
 # only at the CI-ready return point once the pipeline has stopped rewriting that
 # body; the PR the direct-PR worker opens itself; and no PR at all on local-only,
-# where a project's PR-link requirement is unmeetable and is routed back as a
-# needs-decision rather than deferred to a pull request that never comes.
+# where a named issue's PR-link requirement is unmeetable and is routed back as a
+# needs-decision rather than deferred to a pull request that never comes. With no
+# issue named, local-only has nothing to link and raises nothing.
+# Every escalation here names the action rather than a rule number: the block is
+# appended under bin/fm-promote.sh's own numbered ship-instructions list, where a
+# bare "rule 6" would resolve against the wrong list.
 fm_project_instructions_block() {  # <mode> <task-id>
   local mode=$1 id=$2
   case "$mode" in
@@ -44,7 +48,7 @@ fm_project_instructions_block() {  # <mode> <task-id>
   cat <<EOF
 # Project instructions
 If the project carries its own \`AGENTS.md\` or \`CLAUDE.md\`, read it before you edit any file and follow it for this task, including any issue, branch, evidence, and review requirements it states.
-Where it conflicts with the task instructions firstmate gave you, append \`needs-decision: {the conflict}\` and stop as rule 6 requires, rather than choosing between them yourself.
+Where it conflicts with the task instructions firstmate gave you, append \`needs-decision: {the conflict}\` to the status file, stop, and wait for firstmate's answer, rather than choosing between them yourself.
 Your branch name \`fm/$id\` is the single exception: it is firstmate's own mechanical identity, owned by these task instructions, and a project's branch-naming convention does not override it. Keep \`fm/$id\`, and do not report that naming difference as a conflict. Every other project-instruction conflict, including any other branch requirement, still stops.
 EOF
   case "$mode" in
@@ -56,7 +60,8 @@ EOF
     local-only)
       cat <<'EOF'
 This task ships local-only: it opens no pull request, so there is no pull request body for you to add an issue reference to.
-If the project's own instructions require the issue to be closed or linked by a pull request, that requirement cannot be met under this delivery mode. Do not assume a later pull request will carry it: append `needs-decision: {the project requires a PR issue link, mode is local-only}` and stop as rule 6 requires, so firstmate can change the mode or the plan.
+If firstmate named no issue for this task, there is nothing to link and nothing to raise here, whatever the project says about linking pull requests to issues.
+If firstmate named issue #N and the project's own instructions require that issue to be closed or linked by a pull request, that requirement cannot be met under this delivery mode. Do not assume a later pull request will carry it: append `needs-decision: {the project requires a PR link for issue #N, mode is local-only}` to the status file, stop, and wait for firstmate's answer, so firstmate can change the mode or the plan.
 EOF
       ;;
     no-mistakes)

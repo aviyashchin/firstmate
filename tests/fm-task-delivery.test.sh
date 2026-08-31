@@ -361,6 +361,12 @@ STUB
       || fail "$mode: promotion and ordinary brief generation delivered different project instructions"
     assert_grep "Your branch name \`fm/$id\` is the single exception" "$delivered_project" \
       "$mode: promoted worker's project instructions did not exempt its own fm/$id branch name"
+    # This payload's own numbered list ends at item 6 ("These ship instructions
+    # supersede..."), so a bare "rule 6" here would resolve against the wrong list.
+    assert_grep "6. These ship instructions supersede the scout delivery rules" "$payload" \
+      "$mode: promotion payload no longer carries the numbered list this guard is about"
+    assert_no_grep "as rule 6 requires" "$delivered_project" \
+      "$mode: project instructions deferred to a rule number the promoted payload renumbers"
 
     # The one moment an issue can be linked differs per mode, so the promoted
     # worker must receive its own mode's lever, not a generic sentence.
@@ -376,7 +382,9 @@ STUB
       local-only)
         assert_grep "it opens no pull request, so there is no pull request body for you to add an issue reference to" "$delivered_project" \
           "$mode: promoted worker was not told that local-only produces no pull request to link"
-        assert_grep "mode is local-only}\` and stop" "$delivered_project" \
+        assert_grep "If firstmate named issue #N and the project's own instructions require that issue" "$delivered_project" \
+          "$mode: promoted worker's local-only halt was not conditioned on a named issue"
+        assert_grep "mode is local-only}\` to the status file, stop, and wait for firstmate" "$delivered_project" \
           "$mode: promoted worker was not told to stop on an unmeetable PR-link requirement" ;;
     esac
   done

@@ -376,7 +376,7 @@ test_ship_project_memory_wording() {
   assert_grep "read it before you edit any file and follow it for this task" "$brief" \
     "ship brief must instruct the crewmate to read and follow the project's own instructions"
   # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
-  assert_grep 'Where it conflicts with the task instructions firstmate gave you, append `needs-decision: {the conflict}` and stop' "$brief" \
+  assert_grep 'Where it conflicts with the task instructions firstmate gave you, append `needs-decision: {the conflict}` to the status file, stop, and wait for firstmate' "$brief" \
     "ship brief must stop and route a project-instruction conflict back to firstmate"
   # shellcheck disable=SC2016 # Backticks are literal brief markup.
   assert_grep 'carry an explicit same-repository reference (`Closes #N`) in the `--intent` you give /no-mistakes' "$brief" \
@@ -410,6 +410,10 @@ test_ship_project_instructions_branch_and_issue_link() {
       "$mode: brief must exempt the fm/<id> branch name from project branch-naming conventions"
     assert_grep "Every other project-instruction conflict, including any other branch requirement, still stops." "$brief" \
       "$mode: branch-name carve-out must stay narrow and leave every other conflict stopping"
+    # bin/fm-promote.sh appends this block under its own numbered ship-instructions
+    # list, so a bare rule number would resolve against the wrong list there.
+    assert_no_grep "as rule 6 requires" "$brief" \
+      "$mode: project instructions must name the escalation action, not a rule number"
 
     case "$mode" in
       no-mistakes)
@@ -437,11 +441,16 @@ test_ship_project_instructions_branch_and_issue_link() {
       local-only)
         assert_grep "it opens no pull request, so there is no pull request body for you to add an issue reference to" "$brief" \
           "local-only brief must state that it produces no pull request to link"
-        # A project PR-link requirement is unmeetable under local-only, so it must
-        # stop the worker rather than be deferred to a pull request that never comes.
+        # A named issue's PR-link requirement is unmeetable under local-only, so it
+        # must stop the worker rather than be deferred to a PR that never comes.
         # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
-        assert_grep 'append `needs-decision: {the project requires a PR issue link, mode is local-only}` and stop' "$brief" \
+        assert_grep 'If firstmate named issue #N and the project'"'"'s own instructions require that issue to be closed or linked by a pull request' "$brief" \
+          "local-only halt must be conditioned on firstmate having named an issue"
+        # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
+        assert_grep 'append `needs-decision: {the project requires a PR link for issue #N, mode is local-only}`' "$brief" \
           "local-only brief must route an unmeetable PR-link requirement back to firstmate"
+        assert_grep "If firstmate named no issue for this task, there is nothing to link and nothing to raise here" "$brief" \
+          "local-only brief must not halt when no issue was named"
         assert_no_grep "it is linked later, from the pull request this branch eventually reaches" "$brief" \
           "local-only brief must not promise a future pull request this mode never opens"
         assert_no_grep "the \`--intent\` you give /no-mistakes" "$brief" \
