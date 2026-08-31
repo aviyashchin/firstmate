@@ -416,10 +416,15 @@ test_ship_project_instructions_branch_and_issue_link() {
         # shellcheck disable=SC2016 # Backticks are literal brief markup.
         assert_grep 'carry an explicit same-repository reference (`Closes #N`) in the `--intent` you give /no-mistakes' "$brief" \
           "no-mistakes brief must seed the pipeline PR body through --intent"
-        # shellcheck disable=SC2016 # Backticks are literal brief markup.
-        assert_grep 'Editing a pull request body is not a code change and is not the hand-editing an active run forbids.' "$brief" \
-          "no-mistakes brief must permit the post-PR link fix the --intent path can miss"
-        assert_no_grep "This task opens no pull request" "$brief" \
+        # The pipeline rewrites the PR body it derived from --intent, so the
+        # repair window must open only once it has stopped writing.
+        assert_grep "Do not touch that pull request body while the run is active" "$brief" \
+          "no-mistakes brief must not invite a mid-run pull request body edit"
+        assert_grep "Wait until /no-mistakes reports CI green (the CI-ready return point below)" "$brief" \
+          "no-mistakes brief must anchor the link repair to the CI-ready return point"
+        assert_grep "After /no-mistakes reports CI green (the CI-ready return point" "$brief" \
+          "no-mistakes brief must still contain the CI-ready return point the repair window refers to"
+        assert_no_grep "This task ships local-only" "$brief" \
           "no-mistakes brief must not carry the local-only issue-link text"
         ;;
       direct-PR)
@@ -430,8 +435,15 @@ test_ship_project_instructions_branch_and_issue_link() {
           "direct-PR brief must not route issue linking through the pipeline intent"
         ;;
       local-only)
-        assert_grep "This task opens no pull request, so there is no issue link for you to make." "$brief" \
+        assert_grep "it opens no pull request, so there is no pull request body for you to add an issue reference to" "$brief" \
           "local-only brief must state that it produces no pull request to link"
+        # A project PR-link requirement is unmeetable under local-only, so it must
+        # stop the worker rather than be deferred to a pull request that never comes.
+        # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
+        assert_grep 'append `needs-decision: {the project requires a PR issue link, mode is local-only}` and stop' "$brief" \
+          "local-only brief must route an unmeetable PR-link requirement back to firstmate"
+        assert_no_grep "it is linked later, from the pull request this branch eventually reaches" "$brief" \
+          "local-only brief must not promise a future pull request this mode never opens"
         assert_no_grep "the \`--intent\` you give /no-mistakes" "$brief" \
           "local-only brief must not route issue linking through the pipeline intent"
         assert_no_grep "the pull request you open with \`gh-axi\`" "$brief" \

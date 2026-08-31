@@ -28,8 +28,11 @@
 # The block also owns the one moment an issue can be linked: firstmate creates or
 # reuses the issue before the spawn, and only the worker is present once a pull
 # request exists. That moment differs per mode, so the instruction names the exact
-# lever for each: the `--intent` the pipeline derives its PR body from, the PR the
-# direct-PR worker opens itself, and no PR at all on local-only.
+# lever for each: the `--intent` the pipeline derives its PR body from, repaired
+# only at the CI-ready return point once the pipeline has stopped rewriting that
+# body; the PR the direct-PR worker opens itself; and no PR at all on local-only,
+# where a project's PR-link requirement is unmeetable and is routed back as a
+# needs-decision rather than deferred to a pull request that never comes.
 fm_project_instructions_block() {  # <mode> <task-id>
   local mode=$1 id=$2
   case "$mode" in
@@ -52,13 +55,14 @@ EOF
       ;;
     local-only)
       cat <<'EOF'
-This task opens no pull request, so there is no issue link for you to make. If firstmate named an issue for this task, it is linked later, from the pull request this branch eventually reaches.
+This task ships local-only: it opens no pull request, so there is no pull request body for you to add an issue reference to.
+If the project's own instructions require the issue to be closed or linked by a pull request, that requirement cannot be met under this delivery mode. Do not assume a later pull request will carry it: append `needs-decision: {the project requires a PR issue link, mode is local-only}` and stop as rule 6 requires, so firstmate can change the mode or the plan.
 EOF
       ;;
     no-mistakes)
       cat <<'EOF'
 If firstmate named issue #N for this task, the pipeline's pull request must link it, and the pipeline derives that pull request body from your `--intent`: carry an explicit same-repository reference (`Closes #N`) in the `--intent` you give /no-mistakes.
-Once that pull request exists, read its body with `gh-axi` and, if the reference is missing, add it with `gh-axi` before you append your final `done:` line. Editing a pull request body is not a code change and is not the hand-editing an active run forbids.
+Do not touch that pull request body while the run is active - the pipeline rewrites it. Wait until /no-mistakes reports CI green (the CI-ready return point below): only then read the body with `gh-axi` and, if the reference is missing, add it with `gh-axi`, immediately before you append your final `done:` line. That one edit changes no code and is made after the pipeline has stopped writing the pull request.
 EOF
       ;;
   esac

@@ -367,13 +367,17 @@ STUB
     case "$mode" in
       no-mistakes)
         assert_grep 'in the `--intent` you give /no-mistakes' "$delivered_project" \
-          "$mode: promoted worker was not told to seed the pipeline PR body through --intent" ;;
+          "$mode: promoted worker was not told to seed the pipeline PR body through --intent"
+        assert_grep "Do not touch that pull request body while the run is active" "$delivered_project" \
+          "$mode: promoted worker was invited to edit the pull request body mid-run" ;;
       direct-PR)
         assert_grep 'in the body of the pull request you open with `gh-axi`' "$delivered_project" \
           "$mode: promoted worker was not told to link the issue from the PR it opens" ;;
       local-only)
-        assert_grep "This task opens no pull request, so there is no issue link for you to make." "$delivered_project" \
-          "$mode: promoted worker was not told that local-only produces no pull request to link" ;;
+        assert_grep "it opens no pull request, so there is no pull request body for you to add an issue reference to" "$delivered_project" \
+          "$mode: promoted worker was not told that local-only produces no pull request to link"
+        assert_grep "mode is local-only}\` and stop" "$delivered_project" \
+          "$mode: promoted worker was not told to stop on an unmeetable PR-link requirement" ;;
     esac
   done
 

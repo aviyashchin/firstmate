@@ -96,7 +96,7 @@ Requirements on the dispatcher must be satisfied before the spawn, not left for 
 Where the project mandates an issue-first intake, search that project's open issues with `gh-axi` first and reuse a matching open issue rather than creating a second one for work already tracked.
 Only when no open issue covers the scope, create it with `gh-axi` using the issue form that project names.
 Either way, pass the issue number into the brief so the worker can claim it.
-Linking is not satisfiable before the spawn because no pull request exists yet, so the generated brief's project-instructions block owns that moment and names the lever for this task's delivery mode: a `Closes #N` reference carried in the `--intent` a no-mistakes worker gives the pipeline, the body of the pull request a direct-PR worker opens itself, and nothing on local-only, which produces no pull request.
+Linking is not satisfiable before the spawn because no pull request exists yet, so the generated brief's project-instructions block owns that moment and names the lever for this task's delivery mode: a `Closes #N` reference carried in the `--intent` a no-mistakes worker gives the pipeline, the body of the pull request a direct-PR worker opens itself, and nothing on local-only, which produces no pull request - a project that requires the issue to be closed by a pull request cannot be served by that mode, and the worker stops with `needs-decision` rather than deferring the link.
 Where the project mandates scanning open pull requests for overlapping scope, run that scan and reconcile the overlap under `AGENTS.md` section 7's serialization rules before dispatching.
 
 Never copy a project's rules into firstmate's own instructions, and never carry one project's workflow to another project.
