@@ -379,7 +379,7 @@ test_ship_project_memory_wording() {
   assert_grep 'Where it conflicts with the task instructions firstmate gave you, append `needs-decision: {the conflict}` to the status file, stop, and wait for firstmate' "$brief" \
     "ship brief must stop and route a project-instruction conflict back to firstmate"
   # shellcheck disable=SC2016 # Backticks are literal brief markup.
-  assert_grep 'carry an explicit same-repository reference (`Closes #N`) in the `--intent` you give /no-mistakes' "$brief" \
+  assert_grep 'The Definition of done'"'"'s `--intent` rule below is authoritative for what goes in that field' "$brief" \
     "ship brief must name when a project-mandated issue gets linked"
   assert_grep "Record only project knowledge useful to almost every future session." "$brief" \
     "project-memory contract lost the durable-knowledge bar"
@@ -391,7 +391,7 @@ test_ship_project_memory_wording() {
 }
 
 test_ship_project_instructions_branch_and_issue_link() {
-  local home id brief mode
+  local home id brief mode intent_rules
   home="$TMP_ROOT/project-instructions-home"
   mkdir -p "$home/data"
   for mode in no-mistakes direct-PR local-only; do
@@ -417,9 +417,18 @@ test_ship_project_instructions_branch_and_issue_link() {
 
     case "$mode" in
       no-mistakes)
+        # One authoritative --intent construction rule: the project-instructions
+        # block points at the Definition of done's rule instead of restating a
+        # competing one, so exactly one emitted line puts the reference there.
         # shellcheck disable=SC2016 # Backticks are literal brief markup.
-        assert_grep 'carry an explicit same-repository reference (`Closes #N`) in the `--intent` you give /no-mistakes' "$brief" \
+        assert_grep 'A same-repository issue reference firstmate named for this task (`Closes #N`) is task-specific accepted content, not scaffold boilerplate' "$brief" \
+          "no-mistakes brief must accept a named issue reference as task-specific --intent content"
+        # shellcheck disable=SC2016 # Backticks are literal brief markup.
+        assert_grep 'The Definition of done'"'"'s `--intent` rule below is authoritative for what goes in that field' "$brief" \
           "no-mistakes brief must seed the pipeline PR body through --intent"
+        intent_rules=$(grep -F -- '--intent' "$brief" | grep -cF -- 'Closes #N')
+        [ "$intent_rules" -eq 1 ] \
+          || fail "no-mistakes brief must state the --intent issue-reference rule exactly once, found $intent_rules"
         # The pipeline rewrites the PR body it derived from --intent, so the
         # repair window must open only once it has stopped writing.
         assert_grep "Do not touch that pull request body while the run is active" "$brief" \
@@ -435,7 +444,7 @@ test_ship_project_instructions_branch_and_issue_link() {
         # shellcheck disable=SC2016 # Backticks are literal brief markup.
         assert_grep 'in the body of the pull request you open with `gh-axi`' "$brief" \
           "direct-PR brief must put the issue reference in the PR the worker opens"
-        assert_no_grep "the \`--intent\` you give /no-mistakes" "$brief" \
+        assert_no_grep "rule below is authoritative for what goes in that field" "$brief" \
           "direct-PR brief must not route issue linking through the pipeline intent"
         ;;
       local-only)
@@ -453,7 +462,7 @@ test_ship_project_instructions_branch_and_issue_link() {
           "local-only brief must not halt when no issue was named"
         assert_no_grep "it is linked later, from the pull request this branch eventually reaches" "$brief" \
           "local-only brief must not promise a future pull request this mode never opens"
-        assert_no_grep "the \`--intent\` you give /no-mistakes" "$brief" \
+        assert_no_grep "rule below is authoritative for what goes in that field" "$brief" \
           "local-only brief must not route issue linking through the pipeline intent"
         assert_no_grep "the pull request you open with \`gh-axi\`" "$brief" \
           "local-only brief must not tell the worker to open a pull request"

@@ -372,7 +372,7 @@ STUB
     # worker must receive its own mode's lever, not a generic sentence.
     case "$mode" in
       no-mistakes)
-        assert_grep 'in the `--intent` you give /no-mistakes' "$delivered_project" \
+        assert_grep "rule below is authoritative for what goes in that field" "$delivered_project" \
           "$mode: promoted worker was not told to seed the pipeline PR body through --intent"
         assert_grep "Do not touch that pull request body while the run is active" "$delivered_project" \
           "$mode: promoted worker was invited to edit the pull request body mid-run" ;;

@@ -28,7 +28,9 @@
 # The block also owns the one moment an issue can be linked: firstmate creates or
 # reuses the issue before the spawn, and only the worker is present once a pull
 # request exists. That moment differs per mode, so the instruction names the exact
-# lever for each: the `--intent` the pipeline derives its PR body from, repaired
+# lever for each: the `--intent` the pipeline derives its PR body from, whose one
+# construction rule lives in the no-mistakes Definition of done below and is
+# pointed at rather than restated here so the two cannot drift apart, repaired
 # only at the CI-ready return point once the pipeline has stopped rewriting that
 # body; the PR the direct-PR worker opens itself; and no PR at all on local-only,
 # where a named issue's PR-link requirement is unmeetable and is routed back as a
@@ -66,7 +68,7 @@ EOF
       ;;
     no-mistakes)
       cat <<'EOF'
-If firstmate named issue #N for this task, the pipeline's pull request must link it, and the pipeline derives that pull request body from your `--intent`: carry an explicit same-repository reference (`Closes #N`) in the `--intent` you give /no-mistakes.
+If firstmate named an issue for this task, the pipeline's pull request must link it, and the pipeline derives that pull request body from your `--intent`. The Definition of done's `--intent` rule below is authoritative for what goes in that field, and it names a firstmate-named issue reference as task-specific content to carry there; do not construct `--intent` by some other rule here.
 Do not touch that pull request body while the run is active - the pipeline rewrites it. Wait until /no-mistakes reports CI green (the CI-ready return point below): only then read the body with `gh-axi` and, if the reference is missing, add it with `gh-axi`, immediately before you append your final `done:` line. That one edit changes no code and is made after the pipeline has stopped writing the pull request.
 EOF
       ;;
@@ -108,6 +110,7 @@ Firstmate will then instruct you to run /no-mistakes to validate and ship a PR.
 You drive no-mistakes by responding to its gates, not by implementing fixes.
 Follow the guidance no-mistakes itself provides for the mechanics: it loads when you invoke /no-mistakes, and \`no-mistakes axi run --help\` plus the \`help\` lines in each \`axi\` response are authoritative and version-matched to the installed binary.
 When starting no-mistakes, make \`--intent\` preserve all relevant content from this brief's \`# Task\` section plus every later accepted Firstmate requirement, clarification, constraint, exclusion, and supersession, carrying only each requirement's current accepted form; retain direct requirements instead of substituting a diff summary, and exclude generic operational, status, delivery, and other scaffold boilerplate unless it is task-specific.
+A same-repository issue reference firstmate named for this task (\`Closes #N\`) is task-specific accepted content, not scaffold boilerplate: carry it in \`--intent\` so the pull request the pipeline generates links that issue.
 Do not hand-edit, commit, or fix findings yourself while a run is active - the pipeline applies every fix.
 
 Two firstmate-specific rules layer on top of that guidance:
