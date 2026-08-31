@@ -367,6 +367,11 @@ STUB
       "$mode: promotion payload no longer carries the numbered list this guard is about"
     assert_no_grep "as rule 6 requires" "$delivered_project" \
       "$mode: project instructions deferred to a rule number the promoted payload renumbers"
+    # The whole payload holds to this invariant, not just the project-instructions
+    # block: the only numbered list a promoted worker has read is this file's own,
+    # whose item 6 is the supersession clause asserted above.
+    assert_no_grep "(rule 6)" "$payload" \
+      "$mode: promoted payload still points at a rule number its own list renumbers"
     # A promoted worker lands in the same repositories a briefed one does, so it
     # must get the same scoping of which project instructions bind its work.
     assert_grep "Some of what it states is addressed to a different agent than you" "$delivered_project" \

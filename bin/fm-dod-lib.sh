@@ -45,7 +45,8 @@
 # issue named, local-only has nothing to link and raises nothing.
 # Every escalation here names the action rather than a rule number: the block is
 # appended under bin/fm-promote.sh's own numbered ship-instructions list, where a
-# bare "rule 6" would resolve against the wrong list.
+# bare "rule 6" would resolve against the wrong list. The Definition of done
+# below is rendered into that same payload and holds to the same invariant.
 fm_project_instructions_block() {  # <mode> <task-id>
   local mode=$1 id=$2
   case "$mode" in
@@ -124,7 +125,7 @@ A same-repository issue reference firstmate named for this task (\`Closes #N\`) 
 Do not hand-edit, commit, or fix findings yourself while a run is active - the pipeline applies every fix.
 
 Two firstmate-specific rules layer on top of that guidance:
-- ask-user findings are never yours to answer: escalate to firstmate (rule 6) and stop.
+- ask-user findings are never yours to answer: escalate to firstmate by appending \`needs-decision: {the finding}\` to the status file, then stop and wait for firstmate's answer.
   Firstmate applies \`ask-user-authority\` and obtains any required captain decision.
   When the decision comes back, feed it to the gate with \`no-mistakes axi respond\` and let the pipeline apply it - do not route the question to "the user" or implement the fix yourself.
 - NEVER pass \`--yes\` (or \`-y\`) to \`no-mistakes axi run\` or \`no-mistakes axi respond\`. It is banned fleet-wide.

@@ -358,6 +358,9 @@ test_no_mistakes_dod_wording() {
     "no-mistakes DOD must state the --yes ban as a prohibition"
   assert_grep "answering your own ask-user finding is a hard rule violation" "$brief" \
     "no-mistakes DOD must say why --yes is banned"
+  # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
+  assert_grep 'escalate to firstmate by appending `needs-decision: {the finding}` to the status file, then stop and wait for firstmate' "$brief" \
+    "no-mistakes DOD must name the ask-user escalation action rather than a rule number"
   assert_no_grep "Avoid \`--yes\`" "$brief" \
     "no-mistakes DOD still states the --yes ban as a preference"
   assert_no_grep "no-mistakes refuses" "$brief" \
