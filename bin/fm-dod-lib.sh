@@ -20,9 +20,13 @@
 # mode rather than rendering a contract for one. A project's own committed
 # AGENTS.md or CLAUDE.md binds the work done in it, so every worker that edits
 # files - freshly briefed or promoted in place - must be told to read it and to
-# stop on a conflict rather than choose silently. The one carve-out is the branch
-# NAME: `fm/<id>` is firstmate's own mechanical identity, created by the brief's
-# Setup step and assumed by bin/fm-merge-local.sh and bin/fm-review-diff.sh, so a
+# stop on a conflict rather than choose silently. What binds is what that file
+# requires of the work; a repository whose own instructions define a supervising
+# agent's role, authority, or style is addressing a different reader, and a
+# worker that adopted those would stall or misreport instead of implementing.
+# The one carve-out is the branch NAME: `fm/<id>` is firstmate's own mechanical
+# identity, created by the brief's Setup step and assumed by
+# bin/fm-merge-local.sh and bin/fm-review-diff.sh, so a
 # project's branch-naming convention cannot be allowed to stall every such task on
 # needs-decision or rename the branch out from under those consumers.
 # The block also owns the one moment an issue can be linked: firstmate creates or
@@ -49,8 +53,10 @@ fm_project_instructions_block() {  # <mode> <task-id>
   esac
   cat <<EOF
 # Project instructions
-If the project carries its own \`AGENTS.md\` or \`CLAUDE.md\`, read it before you edit any file and follow it for this task, including any issue, branch, evidence, and review requirements it states.
-Where it conflicts with the task instructions firstmate gave you, append \`needs-decision: {the conflict}\` to the status file, stop, and wait for firstmate's answer, rather than choosing between them yourself.
+If the project carries its own \`AGENTS.md\` or \`CLAUDE.md\`, read it before you edit any file.
+Follow what it requires of the work: the issue, branch, evidence, test, review, and commit requirements it states for a change landing in that repository. Those bind this task.
+Some of what it states is addressed to a different agent than you: a repository's own role definition, supervisor or delegation authority, conversational style, and the lifecycle steps its dispatcher owns. Those do not bind your implementation. You are the implementation worker for this task under firstmate's instructions - do not adopt another role from that file and do not delegate this task onward.
+Where a work-binding requirement conflicts with the task instructions firstmate gave you, or where you cannot tell which of the two kinds a requirement is, append \`needs-decision: {the requirement, the file it came from, and the conflict}\` to the status file, stop, and wait for firstmate's answer, rather than choosing between them yourself.
 Your branch name \`fm/$id\` is the single exception: it is firstmate's own mechanical identity, owned by these task instructions, and a project's branch-naming convention does not override it. Keep \`fm/$id\`, and do not report that naming difference as a conflict. Every other project-instruction conflict, including any other branch requirement, still stops.
 EOF
   case "$mode" in

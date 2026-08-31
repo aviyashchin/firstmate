@@ -94,11 +94,13 @@ The generated ship brief already tells the crewmate to read and follow the proje
 
 Requirements on the dispatcher must be satisfied before the spawn, not left for the worker to discover.
 Reconcile the resolved delivery mode against those requirements first, while nothing has been created yet.
-A project that requires its issues to be closed or linked by a pull request cannot be served by `local-only`, which opens none: change the mode or return that concrete decision, and do not create the issue first.
+That reconciliation is about this task, not the project in the abstract. It fires only where the project's instructions require this work to carry an issue and require that issue to be linked or closed through a pull request: `local-only` opens none, so change the mode or return that concrete decision, and do not create the issue first.
 Both inputs are already in hand at that point, so creating an outward-facing issue for a task that will halt on its first read of the project's instructions spends a public artifact and a spawn for nothing.
+Where the project mandates no issue for this work, or permits an issue to be closed without a pull request, `local-only` needs no reconciliation and stays available.
 Where the project mandates an issue-first intake, search that project's open issues with `gh-axi` first and reuse a matching open issue rather than creating a second one for work already tracked.
 Only when no open issue covers the scope, create it with `gh-axi` using the issue form that project names.
 Either way, pass the issue number into the brief so the worker can claim it.
+On `local-only` that issue has no pull request to close it, so firstmate owns closing it, and only after the guarded local merge has landed: close it with `gh-axi`, naming the commit the fast-forward landed. Do not close it at `done: ready`, before the merge, or where the project forbids closing an issue without a pull request - that case is the mode conflict resolved above, before any issue exists.
 Linking is not satisfiable before the spawn because no pull request exists yet, so the generated brief's project-instructions block owns that moment and names the lever for this task's delivery mode: a `Closes #N` reference carried in the `--intent` a no-mistakes worker gives the pipeline, and the body of the pull request a direct-PR worker opens itself.
 `local-only` opens no pull request and so has no link to make; the block's halt there is the backstop for a PR-link requirement this reconciliation missed, and it fires only when an issue was actually named.
 Where the project mandates scanning open pull requests for overlapping scope, run that scan and reconcile the overlap under `AGENTS.md` section 7's serialization rules before dispatching.

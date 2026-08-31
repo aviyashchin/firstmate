@@ -373,10 +373,12 @@ test_ship_project_memory_wording() {
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode no-mistakes >/dev/null 2>&1
   brief="$home/data/$id/brief.md"
   assert_present "$brief" "brief was not scaffolded"
-  assert_grep "read it before you edit any file and follow it for this task" "$brief" \
-    "ship brief must instruct the crewmate to read and follow the project's own instructions"
+  assert_grep "read it before you edit any file" "$brief" \
+    "ship brief must instruct the crewmate to read the project's own instructions"
+  assert_grep "Follow what it requires of the work" "$brief" \
+    "ship brief must bind the crewmate to what the project requires of the work"
   # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
-  assert_grep 'Where it conflicts with the task instructions firstmate gave you, append `needs-decision: {the conflict}` to the status file, stop, and wait for firstmate' "$brief" \
+  assert_grep 'append `needs-decision: {the requirement, the file it came from, and the conflict}` to the status file, stop, and wait for firstmate' "$brief" \
     "ship brief must stop and route a project-instruction conflict back to firstmate"
   # shellcheck disable=SC2016 # Backticks are literal brief markup.
   assert_grep 'The Definition of done'"'"'s `--intent` rule below is authoritative for what goes in that field' "$brief" \
@@ -414,6 +416,19 @@ test_ship_project_instructions_branch_and_issue_link() {
     # list, so a bare rule number would resolve against the wrong list there.
     assert_no_grep "as rule 6 requires" "$brief" \
       "$mode: project instructions must name the escalation action, not a rule number"
+
+    # A target repository's committed instructions can be addressed to a
+    # supervising agent rather than a contributor (this repo's own AGENTS.md is
+    # one). Following those would make the worker adopt another role or delegate
+    # the task instead of implementing it, so the block must scope what binds.
+    assert_grep "Some of what it states is addressed to a different agent than you" "$brief" \
+      "$mode: brief must not bind the worker to instructions written for another agent"
+    assert_grep "role definition, supervisor or delegation authority, conversational style, and the lifecycle steps its dispatcher owns" "$brief" \
+      "$mode: brief must name which kinds of project instruction do not bind the worker"
+    assert_grep "do not adopt another role from that file and do not delegate this task onward" "$brief" \
+      "$mode: brief must forbid adopting another role or re-delegating the task"
+    assert_grep "where you cannot tell which of the two kinds a requirement is" "$brief" \
+      "$mode: brief must turn an unclassifiable requirement into a needs-decision stop"
 
     case "$mode" in
       no-mistakes)

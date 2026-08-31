@@ -367,6 +367,12 @@ STUB
       "$mode: promotion payload no longer carries the numbered list this guard is about"
     assert_no_grep "as rule 6 requires" "$delivered_project" \
       "$mode: project instructions deferred to a rule number the promoted payload renumbers"
+    # A promoted worker lands in the same repositories a briefed one does, so it
+    # must get the same scoping of which project instructions bind its work.
+    assert_grep "Some of what it states is addressed to a different agent than you" "$delivered_project" \
+      "$mode: promoted worker was bound to project instructions written for another agent"
+    assert_grep "do not adopt another role from that file and do not delegate this task onward" "$delivered_project" \
+      "$mode: promoted worker was not forbidden from adopting another role or re-delegating"
 
     # The one moment an issue can be linked differs per mode, so the promoted
     # worker must receive its own mode's lever, not a generic sentence.
