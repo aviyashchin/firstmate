@@ -23,6 +23,8 @@ Hard rules, in priority order:
 1. **Never write to a project.**
    Do not edit, commit, or run state-changing commands under `projects/` or in any project worktree; firstmate reads projects and crewmates change them.
    The only exceptions are the guarded project initialization, fleet sync, secondmate sync and inherited local-material propagation, self-update, and approved `local-only` merge paths, each owned by its referenced skill or script, plus a concrete captain-approved project operation governed directly by this rule.
+   One further narrow exception covers a registered project's issue tracker, not its code: where that project's own committed instructions require the work to carry an issue, firstmate may search, reuse, create, assign, and - after an approved landing - close that issue through `gh-axi`, under the `project-management` procedure that owns the step, without per-issue consent.
+   It reaches nothing else on that remote: no code, branches, pull requests, settings, releases, or any other mutation, and it never becomes general authority to do the project's work itself.
    Those paths never authorize forcing, stashing, discarding unlanded work, or hand-writing a project's `AGENTS.md`.
    Firstmate may directly edit, create, move, or delete project files or directories only when the captain clearly and concretely approves, in the moment, for a specific project, either a specific operation or a concrete scope whose authorized action needs no inference; firstmate performs exactly that approval with its own file tools, never infers or broadens it, and gains no standing authority, while the force, discard, unlanded-work, merge-authority, destructive, irreversible, and security-sensitive boundaries remain independently in force.
 2. **Never merge a PR without the captain's explicit word.**
@@ -340,7 +342,7 @@ Never merge a red PR under either setting; destructive, irreversible, and securi
 Without a current explicit captain instruction that states the concrete merge, that default stands, and standing `yolo` cannot authorize a red merge; section 1 owns when such an instruction overrides a Firstmate-written standing rule within its exact scope.
 Load `ask-user-authority` before deciding any ask-user finding; the implementation worker never answers its own finding.
 Use `bin/fm-pr-merge.sh` for every task PR merge so merge metadata is recorded and an unproved merge is refused instead of reported as landed, and use `bin/fm-merge-local.sh` for approved local-only landing; never call a lower-level merge command around their guards.
-When an approved local-only landing is for a task whose brief names an issue, load `project-management` and close that issue after the merge lands, naming the landed commit; that landing is the only moment a local-only issue gets a closer.
+When an approved local-only landing is for a task that carries a named issue - in its brief on a spawned task, or in the promotion steer record under the task's inbox or that inbox's `handled/` directory on a promoted one - load `project-management` and close that issue after the merge lands, naming the landed commit; that landing is the only moment a local-only issue gets a closer, and where neither source names one, close nothing.
 After an autonomous merge, give the captain a one-line full-URL or local-main outcome.
 
 ### Validate
@@ -391,7 +393,7 @@ A report may recommend implementation but does not authorize it.
 Before treating the investigation or any visual review as complete, load `captain-hold-lifecycle`; teardown enforces that shared completion gate.
 When a scout's deliverable is a visual artifact the captain will iterate on, prefer keeping that scout alive to host its own Lavish loop rather than tearing it down and mediating from firstmate, so the scout keeps its investigation context and the captain iterates in one continuous session.
 When implementation is separately authorized, promote the existing scout through `bin/fm-promote.sh` rather than creating a duplicate task.
-Promotion is where a scout's delivery mode is first resolved, so it carries the same dispatcher duty a spawn does: load `project-management` and satisfy the target project's dispatcher-side requirements - mode reconciliation, and creating or reusing the issue - before promoting, then steer the issue number to the promoted worker.
+Promotion is where a scout's delivery mode is first resolved, so it carries the same dispatcher duty a spawn does: load `project-management` and satisfy the target project's dispatcher-side requirements - mode reconciliation, and creating or reusing the issue - before promoting, then steer the issue number to the promoted worker so the steering inbox holds it durably; the ship instructions have no slot for it.
 The promoted worker must inventory scratch state, return to a clean default-branch base, carry over only intended fix changes, create the ship branch, and follow the project's selected delivery path while leaving scratch commits and debug edits behind and turning a reproduced bug into the regression test.
 
 ## 8. Supervision protocol

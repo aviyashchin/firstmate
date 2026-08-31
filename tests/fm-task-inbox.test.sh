@@ -246,6 +246,25 @@ test_handled_mv_dedups_by_sequence() {
   pass "inbox: the handled mv is the idempotent ack and sequences are never reissued"
 }
 
+# A promoted ship task has no slot for its issue number in the rendered ship
+# instructions, so the steer record is that path's only durable carrier of it
+# (.agents/skills/project-management/SKILL.md). Firstmate rereads it after the
+# guarded local merge, which can be a later session, so the acknowledged record
+# must stay readable rather than being consumed by the ack.
+test_handled_record_body_survives_the_ack() {
+  local state rec body
+  state="$TMP_ROOT/handled-body/state"; mkdir -p "$state"
+  rec=$(inbox_lib "$state" fm_task_inbox_write "$state" t1 "Work the fix under issue #42 in that project.")
+  mv "$rec" "$state/t1.inbox/handled/"
+  [ -f "$state/t1.inbox/handled/001.msg" ] \
+    || fail "the ack must retire the record into handled/, not delete it"
+  body=$(inbox_lib "$state" fm_task_inbox_body "$state/t1.inbox/handled/001.msg") \
+    || fail "an acknowledged record must still be readable after the ack"
+  [ "$body" = "Work the fix under issue #42 in that project." ] \
+    || fail "the acknowledged record lost its steer text: $body"
+  pass "inbox: an acknowledged record stays readable in handled/ for a later lookup"
+}
+
 test_concurrent_writers_never_clobber() {
   local state i pids=() count
   state="$TMP_ROOT/race/state"; mkdir -p "$state"
@@ -501,6 +520,7 @@ test_write_is_durable_and_exact
 test_idempotent_write_dedups_exact_body
 test_idempotent_write_follows_concurrent_ack
 test_handled_mv_dedups_by_sequence
+test_handled_record_body_survives_the_ack
 test_concurrent_writers_never_clobber
 test_ladder_writes_ignore_vanished_inbox
 test_fire_and_forget_records_never_enter_the_ladder
