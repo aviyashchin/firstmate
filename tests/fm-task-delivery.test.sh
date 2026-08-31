@@ -297,7 +297,7 @@ test_promote_refuses_a_symlinked_task_record() {
 # prints against a capturing fm-send.sh, and asserts on the message the worker would
 # actually receive - for every supported mode.
 test_promotion_delivers_the_real_definition_of_done() {
-  local home meta out sendroot payload mode id brief_dod delivered_dod
+  local home meta out sendroot payload mode id brief_dod delivered_dod brief_project delivered_project
   home="$TMP_ROOT/promote-dod/home"
   sendroot="$TMP_ROOT/promote-dod/sendroot"
   mkdir -p "$home/state" "$sendroot/bin"
@@ -348,6 +348,63 @@ STUB
     awk '/^# Definition of done$/ { emit=1 } emit' "$payload" > "$delivered_dod"
     cmp -s "$brief_dod" "$delivered_dod" \
       || fail "$mode: promotion and ordinary brief generation delivered different Definitions of done"
+
+    # A promoted worker edits files, so it must carry the same project-instructions
+    # block a briefed worker gets; both come from the same owner in fm-dod-lib.sh.
+    brief_project="$TMP_ROOT/promote-dod/brief-project-$id"
+    delivered_project="$TMP_ROOT/promote-dod/delivered-project-$id"
+    awk '/^# Project instructions$/ { emit=1 } emit && /^$/ { exit } emit { print }' "$home/data/$id/brief.md" > "$brief_project"
+    awk '/^# Project instructions$/ { emit=1 } emit && /^$/ { exit } emit { print }' "$payload" > "$delivered_project"
+    [ -s "$delivered_project" ] \
+      || fail "$mode: promoted worker was not told to read the project's own agent instructions"
+    cmp -s "$brief_project" "$delivered_project" \
+      || fail "$mode: promotion and ordinary brief generation delivered different project instructions"
+    assert_grep "Your branch name \`fm/$id\` is the single exception" "$delivered_project" \
+      "$mode: promoted worker's project instructions did not exempt its own fm/$id branch name"
+    # This payload's own numbered list ends at item 6 ("These ship instructions
+    # supersede..."), so a bare "rule 6" here would resolve against the wrong list.
+    assert_grep "6. These ship instructions supersede the scout delivery rules" "$payload" \
+      "$mode: promotion payload no longer carries the numbered list this guard is about"
+    assert_no_grep "as rule 6 requires" "$delivered_project" \
+      "$mode: project instructions deferred to a rule number the promoted payload renumbers"
+    # The whole payload holds to this invariant, not just the project-instructions
+    # block: the only numbered list a promoted worker has read is this file's own,
+    # whose item 6 is the supersession clause asserted above.
+    assert_no_grep "(rule 6)" "$payload" \
+      "$mode: promoted payload still points at a rule number its own list renumbers"
+    # A promoted worker lands in the same repositories a briefed one does, so it
+    # must get the same scoping of which project instructions bind its work.
+    assert_grep "Some of what it states is addressed to a different agent than you" "$delivered_project" \
+      "$mode: promoted worker was bound to project instructions written for another agent"
+    assert_grep "do not adopt another role from that file and do not delegate this task onward" "$delivered_project" \
+      "$mode: promoted worker was not forbidden from adopting another role or re-delegating"
+    # Promotion resolves the delivery mode and the issue before this payload is
+    # rendered, so the promoted worker must own neither.
+    assert_grep "Issue creation, reuse, assignment, and this task's delivery mode are firstmate's" "$delivered_project" \
+      "$mode: promoted worker was not told the issue lifecycle and mode stay with the dispatcher"
+    assert_grep "never open, reuse, or reassign one yourself" "$delivered_project" \
+      "$mode: promoted worker was not forbidden from opening or reusing an issue itself"
+
+    # The one moment an issue can be linked differs per mode, so the promoted
+    # worker must receive its own mode's lever, not a generic sentence.
+    case "$mode" in
+      no-mistakes)
+        assert_grep "rule below is authoritative for what goes in that field" "$delivered_project" \
+          "$mode: promoted worker was not told to seed the pipeline PR body through --intent"
+        assert_grep "Do not touch that pull request body while the run is active" "$delivered_project" \
+          "$mode: promoted worker was invited to edit the pull request body mid-run" ;;
+      direct-PR)
+        # shellcheck disable=SC2016 # Literal generated-contract text; backticks are markup in the emitted instructions.
+        assert_grep 'in the body of the pull request you open with `gh-axi`' "$delivered_project" \
+          "$mode: promoted worker was not told to link the issue from the PR it opens" ;;
+      local-only)
+        assert_grep "it opens no pull request, so there is no pull request body for you to add an issue reference to" "$delivered_project" \
+          "$mode: promoted worker was not told that local-only produces no pull request to link"
+        assert_grep "If firstmate named issue #N and the project's own instructions require that issue" "$delivered_project" \
+          "$mode: promoted worker's local-only halt was not conditioned on a named issue"
+        assert_grep "mode is local-only}\` to the status file, stop, and wait for firstmate" "$delivered_project" \
+          "$mode: promoted worker was not told to stop on an unmeetable PR-link requirement" ;;
+    esac
   done
 
   payload="$TMP_ROOT/promote-dod/payload-promote-dod-no-mistakes"

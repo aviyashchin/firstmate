@@ -358,6 +358,9 @@ test_no_mistakes_dod_wording() {
     "no-mistakes DOD must state the --yes ban as a prohibition"
   assert_grep "answering your own ask-user finding is a hard rule violation" "$brief" \
     "no-mistakes DOD must say why --yes is banned"
+  # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
+  assert_grep 'escalate to firstmate by appending `needs-decision: {the finding}` to the status file, then stop and wait for firstmate' "$brief" \
+    "no-mistakes DOD must name the ask-user escalation action rather than a rule number"
   assert_no_grep "Avoid \`--yes\`" "$brief" \
     "no-mistakes DOD still states the --yes ban as a preference"
   assert_no_grep "no-mistakes refuses" "$brief" \
@@ -373,13 +376,130 @@ test_ship_project_memory_wording() {
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode no-mistakes >/dev/null 2>&1
   brief="$home/data/$id/brief.md"
   assert_present "$brief" "brief was not scaffolded"
+  assert_grep "read it before you edit any file" "$brief" \
+    "ship brief must instruct the crewmate to read the project's own instructions"
+  assert_grep "Follow what it requires of the work" "$brief" \
+    "ship brief must bind the crewmate to what the project requires of the work"
+  # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
+  assert_grep 'append `needs-decision: {the requirement, the file it came from, and the conflict}` to the status file, stop, and wait for firstmate' "$brief" \
+    "ship brief must stop and route a project-instruction conflict back to firstmate"
+  # shellcheck disable=SC2016 # Backticks are literal brief markup.
+  assert_grep 'The Definition of done'"'"'s `--intent` rule below is authoritative for what goes in that field' "$brief" \
+    "ship brief must name when a project-mandated issue gets linked"
   assert_grep "Record only project knowledge useful to almost every future session." "$brief" \
     "project-memory contract lost the durable-knowledge bar"
   assert_grep "prefer a pointer to the authoritative file, command, or doc over copying the detail" "$brief" \
     "project-memory contract lost pointer-over-copy guidance"
   assert_grep "lacks \`## Maintaining this file\`, add that short self-governance section" "$brief" \
     "project-memory contract lost the self-governance add-in-same-pass rule"
-  pass "fm-brief.sh: ship project-memory wording carries the AGENTS.md authoring bar"
+  pass "fm-brief.sh: ship brief carries project-instruction following and the AGENTS.md authoring bar"
+}
+
+test_ship_project_instructions_branch_and_issue_link() {
+  local home id brief mode intent_rules
+  home="$TMP_ROOT/project-instructions-home"
+  mkdir -p "$home/data"
+  for mode in no-mistakes direct-PR local-only; do
+    id="brief-projinstr-$mode"
+    FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode "$mode" >/dev/null 2>&1
+    brief="$home/data/$id/brief.md"
+    assert_present "$brief" "$mode: brief was not scaffolded"
+
+    # The fm/<id> branch name is created by Setup step 1 and assumed by
+    # fm-merge-local.sh and fm-review-diff.sh, so a project's branch-naming
+    # convention must not stop the worker or rename the branch.
+    assert_grep "git checkout -b fm/$id" "$brief" \
+      "$mode: brief lost the fm/<id> branch its merge and diff paths assume"
+    # shellcheck disable=SC2016 # Backticks are literal brief markup.
+    assert_grep "Your branch name \`fm/$id\` is the single exception" "$brief" \
+      "$mode: brief must exempt the fm/<id> branch name from project branch-naming conventions"
+    assert_grep "Every other project-instruction conflict, including any other branch requirement, still stops." "$brief" \
+      "$mode: branch-name carve-out must stay narrow and leave every other conflict stopping"
+    # bin/fm-promote.sh appends this block under its own numbered ship-instructions
+    # list, so a bare rule number would resolve against the wrong list there.
+    assert_no_grep "as rule 6 requires" "$brief" \
+      "$mode: project instructions must name the escalation action, not a rule number"
+
+    # A target repository's committed instructions can be addressed to a
+    # supervising agent rather than a contributor (this repo's own AGENTS.md is
+    # one). Following those would make the worker adopt another role or delegate
+    # the task instead of implementing it, so the block must scope what binds.
+    assert_grep "Some of what it states is addressed to a different agent than you" "$brief" \
+      "$mode: brief must not bind the worker to instructions written for another agent"
+    assert_grep "role definition, supervisor or delegation authority, conversational style, and the lifecycle steps its dispatcher owns" "$brief" \
+      "$mode: brief must name which kinds of project instruction do not bind the worker"
+    assert_grep "do not adopt another role from that file and do not delegate this task onward" "$brief" \
+      "$mode: brief must forbid adopting another role or re-delegating the task"
+    assert_grep "where you cannot tell which of the two kinds a requirement is" "$brief" \
+      "$mode: brief must turn an unclassifiable requirement into a needs-decision stop"
+
+    # Issue creation and reuse are dispatcher-owned (project-management runs them
+    # before the worker exists), so a project's issue-first mandate must not read
+    # to the worker as licence to open a second outward-facing issue.
+    assert_grep "Issue creation, reuse, assignment, and this task's delivery mode are firstmate's" "$brief" \
+      "$mode: brief must keep the issue lifecycle and mode with the dispatcher"
+    assert_grep "never open, reuse, or reassign one yourself" "$brief" \
+      "$mode: brief must forbid the worker opening or reusing an issue itself"
+    assert_grep "If the project requires an issue for work like this and firstmate named none, that is a needs-decision stop, not permission to open one." "$brief" \
+      "$mode: brief must turn a missing named issue into a stop rather than a licence"
+    assert_no_grep "Follow what it requires of the work: the issue, branch" "$brief" \
+      "$mode: brief must not list issue requirements as work-binding on the worker"
+
+    case "$mode" in
+      no-mistakes)
+        # One authoritative --intent construction rule: the project-instructions
+        # block points at the Definition of done's rule instead of restating a
+        # competing one, so exactly one emitted line puts the reference there.
+        # shellcheck disable=SC2016 # Backticks are literal brief markup.
+        assert_grep 'A same-repository issue reference firstmate named for this task (`Closes #N`) is task-specific accepted content, not scaffold boilerplate' "$brief" \
+          "no-mistakes brief must accept a named issue reference as task-specific --intent content"
+        # shellcheck disable=SC2016 # Backticks are literal brief markup.
+        assert_grep 'The Definition of done'"'"'s `--intent` rule below is authoritative for what goes in that field' "$brief" \
+          "no-mistakes brief must seed the pipeline PR body through --intent"
+        intent_rules=$(grep -F -- '--intent' "$brief" | grep -cF -- 'Closes #N')
+        [ "$intent_rules" -eq 1 ] \
+          || fail "no-mistakes brief must state the --intent issue-reference rule exactly once, found $intent_rules"
+        # The pipeline rewrites the PR body it derived from --intent, so the
+        # repair window must open only once it has stopped writing.
+        assert_grep "Do not touch that pull request body while the run is active" "$brief" \
+          "no-mistakes brief must not invite a mid-run pull request body edit"
+        assert_grep "Wait until /no-mistakes reports CI green (the CI-ready return point below)" "$brief" \
+          "no-mistakes brief must anchor the link repair to the CI-ready return point"
+        assert_grep "After /no-mistakes reports CI green (the CI-ready return point" "$brief" \
+          "no-mistakes brief must still contain the CI-ready return point the repair window refers to"
+        assert_no_grep "This task ships local-only" "$brief" \
+          "no-mistakes brief must not carry the local-only issue-link text"
+        ;;
+      direct-PR)
+        # shellcheck disable=SC2016 # Backticks are literal brief markup.
+        assert_grep 'in the body of the pull request you open with `gh-axi`' "$brief" \
+          "direct-PR brief must put the issue reference in the PR the worker opens"
+        assert_no_grep "rule below is authoritative for what goes in that field" "$brief" \
+          "direct-PR brief must not route issue linking through the pipeline intent"
+        ;;
+      local-only)
+        assert_grep "it opens no pull request, so there is no pull request body for you to add an issue reference to" "$brief" \
+          "local-only brief must state that it produces no pull request to link"
+        # A named issue's PR-link requirement is unmeetable under local-only, so it
+        # must stop the worker rather than be deferred to a PR that never comes.
+        # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
+        assert_grep 'If firstmate named issue #N and the project'"'"'s own instructions require that issue to be closed or linked by a pull request' "$brief" \
+          "local-only halt must be conditioned on firstmate having named an issue"
+        # shellcheck disable=SC2016 # Backticks and braces are literal brief markup.
+        assert_grep 'append `needs-decision: {the project requires a PR link for issue #N, mode is local-only}`' "$brief" \
+          "local-only brief must route an unmeetable PR-link requirement back to firstmate"
+        assert_grep "If firstmate named no issue for this task, there is nothing to link and nothing to raise here" "$brief" \
+          "local-only brief must not halt when no issue was named"
+        assert_no_grep "it is linked later, from the pull request this branch eventually reaches" "$brief" \
+          "local-only brief must not promise a future pull request this mode never opens"
+        assert_no_grep "rule below is authoritative for what goes in that field" "$brief" \
+          "local-only brief must not route issue linking through the pipeline intent"
+        assert_no_grep "the pull request you open with \`gh-axi\`" "$brief" \
+          "local-only brief must not tell the worker to open a pull request"
+        ;;
+    esac
+  done
+  pass "fm-brief.sh: project instructions keep the fm/<id> branch name and name each mode's issue-link moment"
 }
 
 test_herdr_lab_contract_is_explicit_and_complete() {
@@ -772,6 +892,7 @@ test_delivery_flags_are_refused_where_they_do_not_apply
 test_faster_paths_use_configured_authority_without_stacked_review
 test_no_mistakes_dod_wording
 test_ship_project_memory_wording
+test_ship_project_instructions_branch_and_issue_link
 test_herdr_lab_contract_is_explicit_and_complete
 test_herdr_lab_contract_quotes_foreign_firstmate_path
 test_herdr_lab_omission_is_loud_for_ship_and_scout

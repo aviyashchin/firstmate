@@ -2882,6 +2882,10 @@ rm -f "$STATE/$ID.turn-ended" \
 # The steering inbox (bin/fm-task-inbox-lib.sh) is runtime state for the
 # retired endpoint; teardown only runs after landing is confirmed, so any
 # leftover unhandled steer here is moot rather than unlanded work.
+# One handled record is not moot: a `project-issue:` marker is a promoted
+# local-only task's only durable issue reference, so AGENTS.md section 6
+# requires that issue settled - closed or reported no-close - before teardown
+# reaches this line.
 rm -rf "$STATE/$ID.inbox"
 # The record is gone, so the backlog must not still show this task in flight
 # when teardown reports success. Still under this task's meta lock, so a steer

@@ -246,6 +246,53 @@ test_handled_mv_dedups_by_sequence() {
   pass "inbox: the handled mv is the idempotent ack and sequences are never reissued"
 }
 
+# A promoted ship task has no slot for its issue number in the rendered ship
+# instructions, so the steer record is that path's only durable carrier of it
+# (.agents/skills/project-management/SKILL.md). Firstmate rereads the canonical
+# `project-issue: #N` marker after the guarded local merge, which can be a later
+# session, so the acknowledged record must stay readable rather than being
+# consumed by the ack, and the newest marker must win over an earlier one.
+test_handled_record_body_survives_the_ack() {
+  local state rec body newest rec_file
+  state="$TMP_ROOT/handled-body/state"; mkdir -p "$state"
+  rec=$(inbox_lib "$state" fm_task_inbox_write "$state" t1 "project-issue: #42
+Work the fix under that issue.")
+  mv "$rec" "$state/t1.inbox/handled/"
+  [ -f "$state/t1.inbox/handled/001.msg" ] \
+    || fail "the ack must retire the record into handled/, not delete it"
+  body=$(inbox_lib "$state" fm_task_inbox_body "$state/t1.inbox/handled/001.msg") \
+    || fail "an acknowledged record must still be readable after the ack"
+  case "$body" in
+    "project-issue: #42"*) ;;
+    *) fail "the acknowledged record lost its issue marker: $body" ;;
+  esac
+
+  # A change of tracking issue is steered as a fresh marker, and the highest
+  # record sequence supersedes every earlier one. Sequences are allocated across
+  # the inbox root and handled/ together, so the newest marker is unambiguous
+  # even after the first record was acknowledged.
+  rec=$(inbox_lib "$state" fm_task_inbox_write "$state" t1 "project-issue: #57
+That issue was closed as a duplicate; this task is tracked here now.")
+  [ "$rec" = "$state/t1.inbox/002.msg" ] \
+    || fail "a later marker steer must take the next sequence, got $rec"
+  mv "$rec" "$state/t1.inbox/handled/"
+  # Zero-padded sequences sort lexically, so the last glob match is the newest.
+  newest=""
+  for rec_file in "$state/t1.inbox/handled/"*.msg; do
+    [ -e "$rec_file" ] || break
+    newest=${rec_file##*/}
+  done
+  [ -n "$newest" ] || fail "handled/ must hold at least one record to supersede"
+  [ "$newest" = "002.msg" ] \
+    || fail "the newest handled marker must be the highest sequence, got $newest"
+  body=$(inbox_lib "$state" fm_task_inbox_body "$state/t1.inbox/handled/$newest")
+  case "$body" in
+    "project-issue: #57"*) ;;
+    *) fail "the superseding marker did not survive as the newest record: $body" ;;
+  esac
+  pass "inbox: acknowledged issue markers stay readable and the newest sequence supersedes"
+}
+
 test_concurrent_writers_never_clobber() {
   local state i pids=() count
   state="$TMP_ROOT/race/state"; mkdir -p "$state"
@@ -501,6 +548,7 @@ test_write_is_durable_and_exact
 test_idempotent_write_dedups_exact_body
 test_idempotent_write_follows_concurrent_ack
 test_handled_mv_dedups_by_sequence
+test_handled_record_body_survives_the_ack
 test_concurrent_writers_never_clobber
 test_ladder_writes_ignore_vanished_inbox
 test_fire_and_forget_records_never_enter_the_ladder

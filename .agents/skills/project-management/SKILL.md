@@ -2,9 +2,9 @@
 name: project-management
 description: >-
   Agent-only procedure for Firstmate project management.
-  Use before adding, creating, removing, or initializing a project.
+  Use before adding, creating, removing, or initializing a project, before dispatching into or promoting a scout inside a project that carries its own agent instructions, and before landing an approved local-only merge for a task that carries a named issue.
   Cloning or registering a project is add intake and uses the same trigger.
-  Owns project add, create, clone, remove, initialization, registry, delivery-mode, autonomy, and outward-consent decisions.
+  Owns project add, create, clone, remove, initialization, registry, delivery-mode, autonomy, outward-consent, and dispatch-time project-instruction decisions.
 user-invocable: false
 metadata:
   internal: true
@@ -12,7 +12,7 @@ metadata:
 
 # project-management
 
-Use this procedure before adding, creating, removing, or initializing a project.
+Use this procedure before adding, creating, removing, or initializing a project, before dispatching into or promoting a scout inside a project that carries its own agent instructions, and before landing an approved local-only merge for a task that carries a named issue.
 Cloning or registering a project is add intake and uses the same trigger.
 This skill is the single owner of Firstmate's project-management procedure.
 It does not replace `secondmate-provisioning`, which owns project clones inside persistent secondmate homes.
@@ -81,6 +81,44 @@ cd projects/<name> && no-mistakes init && no-mistakes doctor
 Initialization configures the local gate and does not vendor a no-mistakes skill into the project.
 Do not create a commit merely because initialization ran.
 If doctor reports an environment, authentication, or daemon problem, resolve that blocker before dispatching work and never restart the shared daemon from a project operation.
+
+## Carry a project's own agent instructions into dispatch
+
+A project's committed `AGENTS.md`, or the `CLAUDE.md` that points at it, is that project's own contract for work done in it, and it binds firstmate's dispatch as well as the worker's implementation.
+Read it in the clone under `projects/<name>` before dispatching the task.
+Reading it never authorizes changing it: `AGENTS.md` hard rule 1 still forbids firstmate writing a project's own instructions, and a crewmate updates them through the project's selected delivery path.
+
+Separate what those instructions require of the work from what they require of the dispatcher.
+Requirements on the work, such as a named exit criterion and its raw output, an evidence format, a test scope, or a review gate, are task-specific brief content.
+The generated ship brief already tells the crewmate to read and follow the project's own instructions, so name in the brief only what changes this task's scope, acceptance criteria, or required evidence.
+
+Requirements on the dispatcher must be satisfied before the worker receives its delivery contract, not left for the worker to discover.
+That is the spawn for a freshly briefed ship task, and the promotion for a scout: `bin/fm-promote.sh` is where a scout's delivery mode is first resolved at all, and it takes no issue argument, so run this whole dispatcher step - read the project's instructions, reconcile the mode, search and reuse or create the issue - before running it.
+The ship instructions carry no task slot to name the issue in, so steer it to the promoted worker with `bin/fm-send.sh`, which writes a durable record under the task's steering inbox rather than only printing into a pane.
+Open that steer with the canonical marker line `project-issue: #N` on its own first line, then the ordinary instruction text. That marker is the one form this procedure reads back; a number mentioned only in prose does not count, and a steer that changes which issue tracks the task carries a fresh marker rather than an explanation.
+That marker record is the promotion path's durable issue reference: it stays in the task's inbox until the worker acknowledges it, and the acknowledgement moves it into that inbox's `handled/` directory rather than deleting it. It survives a session restart; it does not survive teardown, which removes the whole inbox, so the closure below must be settled before any teardown of this task.
+Reconcile the resolved delivery mode against those requirements first, while nothing has been created yet.
+That reconciliation is about this task, not the project in the abstract. It fires only where the project's instructions require this work to carry an issue and require that issue to be linked or closed through a pull request: `local-only` opens none, so change the mode or return that concrete decision, and do not create the issue first.
+Both inputs are already in hand at that point, so creating an outward-facing issue for a task that will halt on its first read of the project's instructions spends a public artifact and a spawn for nothing.
+Where the project mandates no issue for this work, or permits an issue to be closed without a pull request, `local-only` needs no reconciliation and stays available.
+Searching, reusing, creating, assigning, and post-landing closing of a registered project's tracker issues under this procedure is the narrow authority `AGENTS.md` hard rule 1 names for it, and it needs no per-issue consent. It authorizes nothing else on that remote: no code, settings, releases, or any other mutation.
+Where the project mandates an issue-first intake, search that project's open issues with `gh-axi` first and reuse a matching open issue rather than creating a second one for work already tracked.
+Only when no open issue covers the scope, create it with `gh-axi` using the issue form that project names.
+Either way, pass the issue number into the brief so the worker can claim it.
+On `local-only` that issue has no pull request to close it, so firstmate owns closing it, and only after the guarded local merge has landed.
+Reread the number from the exact durable source for this task's path: the task's brief on a spawned ship task, or the `project-issue: #N` marker records in the task's inbox and its `handled/` directory on a promoted one.
+Where several marker records exist, the highest-numbered record sequence wins and supersedes every earlier one, which is why a change of tracking issue is steered as a fresh marker. Then close that issue with `gh-axi`, naming the commit the fast-forward landed.
+Where no source names an issue, where a marker record cannot be read, or where you cannot tell which record is newest, close nothing: an issue you remember but cannot read back is not an identification, and closing the wrong number is worse than leaving one open. Report that instead, as the explicit no-close disposition this task ends with.
+Do not close it at `done: ready`, before the merge, or where the project forbids closing an issue without a pull request - that case is the mode conflict resolved above, before any issue exists.
+That closure comes due long after dispatch, often in a later session, so an approved local-only landing for a task carrying a named issue is itself a trigger for this skill; `AGENTS.md` section 6 routes it there at the merge step.
+Settle it immediately after the merge is confirmed and before tearing the task down: either the issue is closed, or the no-close disposition above is reported. `bin/fm-teardown.sh` removes the task's steering inbox, so a teardown run while a `project-issue:` marker is still unresolved destroys the only reference that could have closed it.
+Linking is not satisfiable before the spawn because no pull request exists yet, so the generated brief's project-instructions block owns that moment and names the lever for this task's delivery mode: a `Closes #N` reference carried in the `--intent` a no-mistakes worker gives the pipeline, and the body of the pull request a direct-PR worker opens itself.
+`local-only` opens no pull request and so has no link to make; the block's halt there is the backstop for a PR-link requirement this reconciliation missed, and it fires only when an issue was actually named.
+Where the project mandates scanning open pull requests for overlapping scope, run that scan and reconcile the overlap under `AGENTS.md` section 7's serialization rules before dispatching.
+
+Never copy a project's rules into firstmate's own instructions, and never carry one project's workflow to another project.
+If a project's instructions conflict with a current captain instruction or a firstmate safety boundary, the captain and the boundary win, and the conflict is reported rather than silently resolved.
+A project's branch-naming convention is settled the same way and needs no dispatch-time reconciliation: the task branch is firstmate's own `fm/<task-id>`, which the brief's project-instructions block already exempts.
 
 ## Remove
 
