@@ -373,6 +373,12 @@ STUB
       "$mode: promoted worker was bound to project instructions written for another agent"
     assert_grep "do not adopt another role from that file and do not delegate this task onward" "$delivered_project" \
       "$mode: promoted worker was not forbidden from adopting another role or re-delegating"
+    # Promotion resolves the delivery mode and the issue before this payload is
+    # rendered, so the promoted worker must own neither.
+    assert_grep "Issue creation, reuse, assignment, and this task's delivery mode are firstmate's" "$delivered_project" \
+      "$mode: promoted worker was not told the issue lifecycle and mode stay with the dispatcher"
+    assert_grep "never open, reuse, or reassign one yourself" "$delivered_project" \
+      "$mode: promoted worker was not forbidden from opening or reusing an issue itself"
 
     # The one moment an issue can be linked differs per mode, so the promoted
     # worker must receive its own mode's lever, not a generic sentence.

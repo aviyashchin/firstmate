@@ -24,6 +24,9 @@
 # requires of the work; a repository whose own instructions define a supervising
 # agent's role, authority, or style is addressing a different reader, and a
 # worker that adopted those would stall or misreport instead of implementing.
+# Issue creation and reuse are dispatcher-owned in the project-management skill,
+# so the block names them as firstmate's rather than leaving a project's
+# issue-first mandate readable by the worker as licence to open a second one.
 # The one carve-out is the branch NAME: `fm/<id>` is firstmate's own mechanical
 # identity, created by the brief's Setup step and assumed by
 # bin/fm-merge-local.sh and bin/fm-review-diff.sh, so a
@@ -54,8 +57,9 @@ fm_project_instructions_block() {  # <mode> <task-id>
   cat <<EOF
 # Project instructions
 If the project carries its own \`AGENTS.md\` or \`CLAUDE.md\`, read it before you edit any file.
-Follow what it requires of the work: the issue, branch, evidence, test, review, and commit requirements it states for a change landing in that repository. Those bind this task.
+Follow what it requires of the work: the branch, evidence, test, review, and commit requirements it states for a change landing in that repository. Those bind this task.
 Some of what it states is addressed to a different agent than you: a repository's own role definition, supervisor or delegation authority, conversational style, and the lifecycle steps its dispatcher owns. Those do not bind your implementation. You are the implementation worker for this task under firstmate's instructions - do not adopt another role from that file and do not delegate this task onward.
+Issue creation, reuse, assignment, and this task's delivery mode are firstmate's and were decided before you were given this task. Use only an issue firstmate named to you; never open, reuse, or reassign one yourself, and close one only through the mode-specific pull request reference named below. If the project requires an issue for work like this and firstmate named none, that is a needs-decision stop, not permission to open one.
 Where a work-binding requirement conflicts with the task instructions firstmate gave you, or where you cannot tell which of the two kinds a requirement is, append \`needs-decision: {the requirement, the file it came from, and the conflict}\` to the status file, stop, and wait for firstmate's answer, rather than choosing between them yourself.
 Your branch name \`fm/$id\` is the single exception: it is firstmate's own mechanical identity, owned by these task instructions, and a project's branch-naming convention does not override it. Keep \`fm/$id\`, and do not report that naming difference as a conflict. Every other project-instruction conflict, including any other branch requirement, still stops.
 EOF

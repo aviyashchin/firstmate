@@ -430,6 +430,18 @@ test_ship_project_instructions_branch_and_issue_link() {
     assert_grep "where you cannot tell which of the two kinds a requirement is" "$brief" \
       "$mode: brief must turn an unclassifiable requirement into a needs-decision stop"
 
+    # Issue creation and reuse are dispatcher-owned (project-management runs them
+    # before the worker exists), so a project's issue-first mandate must not read
+    # to the worker as licence to open a second outward-facing issue.
+    assert_grep "Issue creation, reuse, assignment, and this task's delivery mode are firstmate's" "$brief" \
+      "$mode: brief must keep the issue lifecycle and mode with the dispatcher"
+    assert_grep "never open, reuse, or reassign one yourself" "$brief" \
+      "$mode: brief must forbid the worker opening or reusing an issue itself"
+    assert_grep "If the project requires an issue for work like this and firstmate named none, that is a needs-decision stop, not permission to open one." "$brief" \
+      "$mode: brief must turn a missing named issue into a stop rather than a licence"
+    assert_no_grep "Follow what it requires of the work: the issue, branch" "$brief" \
+      "$mode: brief must not list issue requirements as work-binding on the worker"
+
     case "$mode" in
       no-mistakes)
         # One authoritative --intent construction rule: the project-instructions

@@ -2,7 +2,7 @@
 name: project-management
 description: >-
   Agent-only procedure for Firstmate project management.
-  Use before adding, creating, removing, or initializing a project, and before dispatching into a project that carries its own agent instructions.
+  Use before adding, creating, removing, or initializing a project, before dispatching into or promoting a scout inside a project that carries its own agent instructions, and before landing an approved local-only merge for a task that carries a named issue.
   Cloning or registering a project is add intake and uses the same trigger.
   Owns project add, create, clone, remove, initialization, registry, delivery-mode, autonomy, outward-consent, and dispatch-time project-instruction decisions.
 user-invocable: false
@@ -12,7 +12,7 @@ metadata:
 
 # project-management
 
-Use this procedure before adding, creating, removing, or initializing a project, and before dispatching into a project that carries its own agent instructions.
+Use this procedure before adding, creating, removing, or initializing a project, before dispatching into or promoting a scout inside a project that carries its own agent instructions, and before landing an approved local-only merge for a task that carries a named issue.
 Cloning or registering a project is add intake and uses the same trigger.
 This skill is the single owner of Firstmate's project-management procedure.
 It does not replace `secondmate-provisioning`, which owns project clones inside persistent secondmate homes.
@@ -92,7 +92,8 @@ Separate what those instructions require of the work from what they require of t
 Requirements on the work, such as a named exit criterion and its raw output, an evidence format, a test scope, or a review gate, are task-specific brief content.
 The generated ship brief already tells the crewmate to read and follow the project's own instructions, so name in the brief only what changes this task's scope, acceptance criteria, or required evidence.
 
-Requirements on the dispatcher must be satisfied before the spawn, not left for the worker to discover.
+Requirements on the dispatcher must be satisfied before the worker receives its delivery contract, not left for the worker to discover.
+That is the spawn for a freshly briefed ship task, and the promotion for a scout: `bin/fm-promote.sh` is where a scout's delivery mode is first resolved at all, and it takes no issue argument, so run this whole dispatcher step - read the project's instructions, reconcile the mode, search and reuse or create the issue - before running it, and steer the issue number to the promoted worker through its instruction inbox, since the ship instructions carry no task slot to name it in.
 Reconcile the resolved delivery mode against those requirements first, while nothing has been created yet.
 That reconciliation is about this task, not the project in the abstract. It fires only where the project's instructions require this work to carry an issue and require that issue to be linked or closed through a pull request: `local-only` opens none, so change the mode or return that concrete decision, and do not create the issue first.
 Both inputs are already in hand at that point, so creating an outward-facing issue for a task that will halt on its first read of the project's instructions spends a public artifact and a spawn for nothing.
@@ -100,7 +101,8 @@ Where the project mandates no issue for this work, or permits an issue to be clo
 Where the project mandates an issue-first intake, search that project's open issues with `gh-axi` first and reuse a matching open issue rather than creating a second one for work already tracked.
 Only when no open issue covers the scope, create it with `gh-axi` using the issue form that project names.
 Either way, pass the issue number into the brief so the worker can claim it.
-On `local-only` that issue has no pull request to close it, so firstmate owns closing it, and only after the guarded local merge has landed: close it with `gh-axi`, naming the commit the fast-forward landed. Do not close it at `done: ready`, before the merge, or where the project forbids closing an issue without a pull request - that case is the mode conflict resolved above, before any issue exists.
+On `local-only` that issue has no pull request to close it, so firstmate owns closing it, and only after the guarded local merge has landed: reread the issue number from the task's durable brief, then close it with `gh-axi`, naming the commit the fast-forward landed. Do not close it at `done: ready`, before the merge, or where the project forbids closing an issue without a pull request - that case is the mode conflict resolved above, before any issue exists.
+That closure comes due long after dispatch, often in a later session, so an approved local-only landing for a task carrying a named issue is itself a trigger for this skill; `AGENTS.md` section 6 routes it there at the merge step.
 Linking is not satisfiable before the spawn because no pull request exists yet, so the generated brief's project-instructions block owns that moment and names the lever for this task's delivery mode: a `Closes #N` reference carried in the `--intent` a no-mistakes worker gives the pipeline, and the body of the pull request a direct-PR worker opens itself.
 `local-only` opens no pull request and so has no link to make; the block's halt there is the backstop for a PR-link requirement this reconciliation missed, and it fires only when an issue was actually named.
 Where the project mandates scanning open pull requests for overlapping scope, run that scan and reconcile the overlap under `AGENTS.md` section 7's serialization rules before dispatching.
