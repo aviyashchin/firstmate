@@ -1,0 +1,9 @@
+$ pi --version
+0.87.1
+$ FM_HOME=<tmp-a> pi --help   (old probe, repo cwd)
+exit=0
+markers written: 
+$ FM_HOME=<tmp-b> pi --no-extensions --help   (new probe, repo cwd)
+exit=0
+markers written: 
+--tui-mode advertised: 1

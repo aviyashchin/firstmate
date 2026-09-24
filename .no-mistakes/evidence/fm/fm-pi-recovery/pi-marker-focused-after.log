@@ -1,0 +1,3 @@
+ok - Pi watcher arm distinguishes all session lock ownership states
+ok - Pi primary extensions preserve exact lock-owner markers while retaining pre-lock and stale-lock publication
+ok - Pi session transitions auto-arm through a generation owner across /new /resume /fork/reload, stale callbacks, and quit

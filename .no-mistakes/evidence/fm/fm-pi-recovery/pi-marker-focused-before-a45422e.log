@@ -1,0 +1,2 @@
+ok - Pi watcher arm distinguishes all session lock ownership states
+not ok - Pi turn-end extension did not replace a dead prior owner marker
