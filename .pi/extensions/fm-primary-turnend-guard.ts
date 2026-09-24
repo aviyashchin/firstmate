@@ -20,18 +20,30 @@ const state = process.env.FM_STATE_OVERRIDE || `${fmHome}/state`;
 const marker = `${state}/.pi-turnend-extension-loaded`;
 const extensionVersion = `sha256:${createHash("sha256").update(readFileSync(extensionFile)).digest("hex")}`;
 
-function canPublishLoadedMarker(): boolean {
+function pidAlive(pid: string): boolean {
   try {
-    return readFileSync(`${state}/.lock`, "utf8").trim() === String(process.pid);
+    process.kill(Number(pid), 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function canPublishLoadedMarker(): boolean {
+  let lockPid = "";
+  try {
+    lockPid = readFileSync(`${state}/.lock`, "utf8").trim();
   } catch (error) {
     return typeof error === "object" && error !== null && "code" in error &&
       String((error as { code?: unknown }).code ?? "") === "ENOENT";
   }
+  if (lockPid === String(process.pid)) return true;
+  return /^[0-9]+$/.test(lockPid) && lockPid !== "0" && lockPid !== "1" && !pidAlive(lockPid);
 }
 
 function markLoaded(): void {
   // The marker verifier requires the exact lock PID. Publish before the lock
-  // exists for startup discovery, but never let an owned descendant replace it.
+  // exists or after its owner died, but never let an owned descendant replace it.
   if (!existsSync(state) || !canPublishLoadedMarker()) return;
   writeFileSync(marker, `${extensionVersion}\n${process.pid}\n`);
 }

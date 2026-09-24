@@ -2151,12 +2151,13 @@ EOF
 }
 
 test_pi_descendant_load_preserves_exact_owner_markers() {
-  local repo prelock_home locked_home loader child_pid lock_pid out status
+  local repo prelock_home stale_home locked_home loader child_pid lock_pid dead_pid out status
   repo="$TMP_ROOT/pi-marker-owner-root"
   prelock_home="$TMP_ROOT/pi-marker-owner-prelock-home"
+  stale_home="$TMP_ROOT/pi-marker-owner-stale-home"
   locked_home="$TMP_ROOT/pi-marker-owner-locked-home"
   loader="$repo/load-primary-extensions.mjs"
-  mkdir -p "$prelock_home/state" "$locked_home/state"
+  mkdir -p "$prelock_home/state" "$stale_home/state" "$locked_home/state"
   install_pi_watch_extension_fixture "$repo"
   cp "$ROOT/.pi/extensions/fm-primary-turnend-guard.ts" "$repo/.pi/extensions/fm-primary-turnend-guard.ts"
   cat > "$loader" <<'JS'
@@ -2188,6 +2189,24 @@ JS
   [ "$(sed -n '2p' "$prelock_home/state/.pi-watch-extension-loaded")" = "$child_pid" ] \
     || fail "Pi watcher extension lost pre-lock marker publication"
 
+  sleep 0 &
+  dead_pid=$!
+  wait "$dead_pid" 2>/dev/null || true
+  ! kill -0 "$dead_pid" 2>/dev/null || fail "stale lock fixture PID $dead_pid is still alive"
+  printf '%s\n' "$dead_pid" > "$stale_home/state/.lock"
+  printf 'old-turnend\n%s\n' "$dead_pid" > "$stale_home/state/.pi-turnend-extension-loaded"
+  printf 'old-watch\n%s\ngeneration=3 phase=active\n' "$dead_pid" > "$stale_home/state/.pi-watch-extension-loaded"
+  out=$(FM_HOME="$stale_home" FM_ROOT_OVERRIDE="$repo" \
+    FM_CHILD_PID_FILE="$stale_home/child.pid" node "$loader" 2>&1)
+  status=$?
+  expect_code 0 "$status" "Pi primary extensions must republish markers over a dead prior session lock"
+  [ -z "$out" ] || fail "Pi stale-lock marker publication printed output: $out"
+  child_pid=$(cat "$stale_home/child.pid")
+  [ "$(sed -n '2p' "$stale_home/state/.pi-turnend-extension-loaded")" = "$child_pid" ] \
+    || fail "Pi turn-end extension did not replace a dead prior owner marker"
+  [ "$(sed -n '2p' "$stale_home/state/.pi-watch-extension-loaded")" = "$child_pid" ] \
+    || fail "Pi watcher extension did not replace a dead prior owner marker"
+
   lock_pid=$$
   printf '%s\n' "$lock_pid" > "$locked_home/state/.lock"
   printf 'owner-turnend\n%s\n' "$lock_pid" > "$locked_home/state/.pi-turnend-extension-loaded"
@@ -2204,7 +2223,7 @@ JS
     || fail "Pi descendant replaced the exact turn-end extension owner marker"
   cmp -s "$locked_home/expected-watch" "$locked_home/state/.pi-watch-extension-loaded" \
     || fail "Pi descendant replaced the exact watcher extension owner marker"
-  pass "Pi primary extensions preserve exact lock-owner markers while retaining pre-lock publication"
+  pass "Pi primary extensions preserve exact lock-owner markers while retaining pre-lock and stale-lock publication"
 }
 
 test_pi_session_transition_generation_owner() {

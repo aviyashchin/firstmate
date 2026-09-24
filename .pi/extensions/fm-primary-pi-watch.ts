@@ -246,16 +246,19 @@ function lockOwnership(): LockOwnership {
 }
 
 function canPublishGenerationOwner(): boolean {
+  let lockPid = "";
   try {
-    return readFileSync(`${state}/.lock`, "utf8").trim() === String(process.pid);
+    lockPid = readFileSync(`${state}/.lock`, "utf8").trim();
   } catch (error) {
     return nodeErrorCode(error) === "ENOENT";
   }
+  if (lockPid === String(process.pid)) return true;
+  return /^[0-9]+$/.test(lockPid) && lockPid !== "0" && lockPid !== "1" && !pidAlive(lockPid);
 }
 
 function publishGenerationOwner(generation: SessionGeneration, phase: "active" | "handoff"): void {
   // The marker verifier requires the exact lock PID. Publish before the lock
-  // exists for startup discovery, but never let an owned descendant replace it.
+  // exists or after its owner died, but never let an owned descendant replace it.
   if (!canPublishGenerationOwner()) return;
   mkdirSync(state, { recursive: true });
   const temporary = `${marker}.tmp-${process.pid}-${generation.id}`;
