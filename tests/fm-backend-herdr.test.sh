@@ -143,7 +143,7 @@ case "${1:-}" in
     ;;
   server)
     {
-      for name in FM_HOME FM_ROOT_OVERRIDE FM_STATE_OVERRIDE FM_DATA_OVERRIDE FM_PROJECTS_OVERRIDE FM_CONFIG_OVERRIDE CURSOR_AGENT CURSOR_INVOKED_AS CLAUDECODE PI_CODING_AGENT FM_PI_HARNESS GROK_AGENT FM_SUPERVISION_MODEL FM_HERDR_SENTINEL HERDR_SESSION; do
+      for name in FM_HOME FM_ROOT_OVERRIDE FM_STATE_OVERRIDE FM_DATA_OVERRIDE FM_PROJECTS_OVERRIDE FM_CONFIG_OVERRIDE CURSOR_AGENT CURSOR_INVOKED_AS CLAUDECODE PI_CODING_AGENT FM_PI_HARNESS GROK_AGENT FM_SUPERVISION_MODEL FM_CREW_STATE_META_OVERRIDE FM_CREW_STATE_STATUS_OVERRIDE FM_CREW_STATE_NO_FORGE FM_REMOTE_JOB_PLATFORM_OVERRIDE FM_SESSION_START_STAGE_FILE FM_SESSIONSTART_SUPERVISOR_PID FM_HOME_SUMMARY_IF_IDLE FM_HOME_SUMMARY_WORKER_BEST_EFFORT FM_HERDR_SENTINEL HERDR_SESSION; do
         eval 'value=${'"$name"'-<unset>}'
         printf '%s=%s\n' "$name" "$value"
       done
@@ -1104,6 +1104,31 @@ test_container_ensure_refuses_an_ambiguous_home_label() {
 }
 
 # --- container_ensure / create_task ------------------------------------------
+
+test_server_ensure_scrubs_private_call_scoped_settings() {
+  # A read-only state probe (fm-crew-state.sh under fm-fleet-snapshot.sh's
+  # call-scoped overrides, or a session-start stage) can be what first starts
+  # the long-lived server; every pane that server creates later must not
+  # inherit that one caller's private settings.
+  local dir log marker fb output name
+  dir="$TMP_ROOT/server-env-private"; mkdir -p "$dir"; log="$dir/env"; marker="$dir/running"
+  fb=$(make_herdr_server_env_fakebin "$dir")
+  PATH="$fb:$PATH" FM_HERDR_SERVER_ENV_LOG="$log" FM_HERDR_SERVER_MARKER="$marker" FM_HERDR_SENTINEL=kept \
+    FM_CREW_STATE_META_OVERRIDE=/tmp/snap/fm-frozen.meta FM_CREW_STATE_STATUS_OVERRIDE=/tmp/snap/fm-frozen.status \
+    FM_CREW_STATE_NO_FORGE=1 FM_REMOTE_JOB_PLATFORM_OVERRIDE=linux \
+    FM_SESSION_START_STAGE_FILE=/tmp/stage FM_SESSIONSTART_SUPERVISOR_PID=4242 \
+    FM_HOME_SUMMARY_IF_IDLE=1 FM_HOME_SUMMARY_WORKER_BEST_EFFORT=1 \
+    bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_server_ensure fmtest' "$ROOT"
+  expect_code 0 $? "server_ensure should start under a probe's call-scoped environment"
+  output=$(cat "$log")
+  for name in FM_CREW_STATE_META_OVERRIDE FM_CREW_STATE_STATUS_OVERRIDE FM_CREW_STATE_NO_FORGE FM_REMOTE_JOB_PLATFORM_OVERRIDE \
+    FM_SESSION_START_STAGE_FILE FM_SESSIONSTART_SUPERVISOR_PID FM_HOME_SUMMARY_IF_IDLE FM_HOME_SUMMARY_WORKER_BEST_EFFORT; do
+    assert_contains "$output" "$name=<unset>" "server_ensure leaked $name into the long-lived Herdr server"
+  done
+  assert_contains "$output" "FM_HERDR_SENTINEL=kept" "server_ensure removed an unrelated environment variable"
+  assert_contains "$output" "args=server --session fmtest" "server_ensure lost the trailing Herdr session flag"
+  pass "fm_backend_herdr_server_ensure: scrubs call-scoped status-read and session-start settings from the long-lived server"
+}
 
 test_container_ensure_starts_server_and_workspace() {
   local dir log resp fb out
@@ -5628,6 +5653,7 @@ test_workspace_ensure_other_home_ignores_the_launcher_identity
 test_container_ensure_refuses_an_ambiguous_home_label
 test_container_ensure_starts_server_and_workspace
 test_server_ensure_scrubs_home_and_harness_identity
+test_server_ensure_scrubs_private_call_scoped_settings
 test_container_ensure_reuses_existing_workspace
 test_container_ensure_creates_with_no_focus_flag
 test_container_ensure_uses_secondmate_home_label
