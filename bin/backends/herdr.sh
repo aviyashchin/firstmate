@@ -1657,8 +1657,8 @@ fm_backend_herdr_projection_order_best_effort() {  # <session> <created-workspac
 # removed by pattern rather than by a name list a new override would slip past.
 # Session-start stages, home-summary workers, and state probes also carry
 # call-scoped settings, which are removed by name; documented operator knobs in
-# those families, such as FM_SESSION_START_TIMEOUT or FM_CREW_STATE_RUNS_LIMIT,
-# still reach panes. Bounded poll for the server to report running.
+# those families, such as FM_SESSION_START_TIMEOUT, FM_HOME_SUMMARY_FAILURE_REPORT,
+# or FM_CREW_STATE_RUNS_LIMIT, still reach panes. Bounded poll for the server to report running.
 fm_backend_herdr_server_ensure() {  # <session>
   local session=$1 running out i name
   running=$(fm_backend_herdr_cli "$session" status --json 2>/dev/null | jq -r '.server.running // false' 2>/dev/null)
@@ -1666,7 +1666,7 @@ fm_backend_herdr_server_ensure() {  # <session>
   (
     unset FM_HOME CURSOR_AGENT CURSOR_INVOKED_AS CLAUDECODE PI_CODING_AGENT FM_PI_HARNESS GROK_AGENT FM_SUPERVISION_MODEL \
       FM_SESSION_START_STAGE_FILE FM_SESSIONSTART_SUPERVISOR_PID FM_HOME_SUMMARY_IF_IDLE FM_HOME_SUMMARY_WORKER_BEST_EFFORT \
-      FM_HOME_SUMMARY_FAILURE_REPORT FM_CREW_STATE_NO_FORGE FM_CREW_STATE_BIN
+      FM_CREW_STATE_NO_FORGE FM_CREW_STATE_BIN
     for name in $(compgen -e); do
       case "$name" in
         FM_*_OVERRIDE|FM_HOME_SUMMARY_PARENT_*) unset "$name" ;;

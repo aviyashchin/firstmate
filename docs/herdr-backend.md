@@ -222,8 +222,8 @@ The adapter starts and polls a named server before workspace, tab, pane, or agen
 Every Herdr invocation goes through `fm_backend_herdr_cli`, which sets the environment and passes an explicit trailing `--session <name>`.
 An environment variable alone is not reliable when another Herdr server is running.
 When the selected named server is not running, the adapter launches it without the inherited Firstmate home, any `FM_*_OVERRIDE` value, harness identity markers, or the supervision-model override.
-It also drops the call-scoped status-read, session-start, and home-summary settings (`FM_CREW_STATE_NO_FORGE`, `FM_CREW_STATE_BIN`, `FM_SESSION_START_STAGE_FILE`, `FM_SESSIONSTART_SUPERVISOR_PID`, `FM_HOME_SUMMARY_IF_IDLE`, `FM_HOME_SUMMARY_WORKER_BEST_EFFORT`, `FM_HOME_SUMMARY_PARENT_*`, and `FM_HOME_SUMMARY_FAILURE_REPORT`), because a read-only probe such as a fleet snapshot's crew-state read can be the call that starts the server.
-Documented tuning knobs in those families, such as `FM_SESSION_START_TIMEOUT` and `FM_CREW_STATE_RUNS_LIMIT`, still reach its panes.
+It also drops the call-scoped status-read, session-start, and home-summary settings (`FM_CREW_STATE_NO_FORGE`, `FM_CREW_STATE_BIN`, `FM_SESSION_START_STAGE_FILE`, `FM_SESSIONSTART_SUPERVISOR_PID`, `FM_HOME_SUMMARY_IF_IDLE`, `FM_HOME_SUMMARY_WORKER_BEST_EFFORT`, and `FM_HOME_SUMMARY_PARENT_*`), because a read-only probe such as a fleet snapshot's crew-state read can be the call that starts the server.
+Documented tuning knobs in those families, such as `FM_SESSION_START_TIMEOUT`, `FM_HOME_SUMMARY_FAILURE_REPORT`, and `FM_CREW_STATE_RUNS_LIMIT`, still reach its panes.
 Herdr passes its server startup environment to every later pane, so retaining those values could misroute panes for another Firstmate home or harness.
 An already-running server is reused without restart or environment changes.
 Explicit named-session routing and unrelated launch environment remain intact.

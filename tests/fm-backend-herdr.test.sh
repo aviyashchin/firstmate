@@ -1126,11 +1126,11 @@ test_server_ensure_scrubs_private_call_scoped_settings() {
   output=$(cat "$log")
   for name in FM_CREW_STATE_META_OVERRIDE FM_CREW_STATE_STATUS_OVERRIDE FM_CREW_STATE_NO_FORGE FM_REMOTE_JOB_PLATFORM_OVERRIDE \
     FM_SESSION_START_STAGE_FILE FM_SESSIONSTART_SUPERVISOR_PID FM_HOME_SUMMARY_IF_IDLE FM_HOME_SUMMARY_WORKER_BEST_EFFORT \
-    FM_HOME_SUMMARY_PARENT_STAMP FM_HOME_SUMMARY_PARENT_ERROR FM_HOME_SUMMARY_FAILURE_REPORT FM_CREW_STATE_BIN; do
+    FM_HOME_SUMMARY_PARENT_STAMP FM_HOME_SUMMARY_PARENT_ERROR FM_CREW_STATE_BIN; do
     assert_contains "$output" "$name=<unset>" "server_ensure leaked $name into the long-lived Herdr server"
   done
   for name in FM_SESSION_START_TIMEOUT=300 FM_SESSION_START_QUEUED_LIMIT=7 FM_HOME_SUMMARY_INTERVAL=90 \
-    FM_CREW_STATE_RUNS_LIMIT=50 FM_CREW_STATE_NM_TIMEOUT=25; do
+    FM_HOME_SUMMARY_FAILURE_REPORT=3 FM_CREW_STATE_RUNS_LIMIT=50 FM_CREW_STATE_NM_TIMEOUT=25; do
     assert_contains "$output" "$name" "server_ensure dropped the documented knob ${name%%=*} from the long-lived Herdr server"
   done
   assert_contains "$output" "FM_HERDR_SENTINEL=kept" "server_ensure removed an unrelated environment variable"
