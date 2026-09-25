@@ -1653,20 +1653,23 @@ fm_backend_herdr_projection_order_best_effort() {  # <session> <created-workspac
 # every later pane, so remove home, harness identity, and supervision selection
 # inherited from whichever agent happened to start it. A read-only probe can be
 # that starter too: fm-fleet-snapshot.sh scopes fm-crew-state.sh to one task's
-# captured records with FM_CREW_STATE_*_OVERRIDE, and session-start stages
-# carry their own FM_SESSION_START_*/FM_SESSIONSTART_*/FM_HOME_SUMMARY_*
-# settings, so every override and call-scoped family is removed by prefix
-# rather than by a name list a new override would slip past. Bounded poll for
-# the server to report running.
+# captured records with FM_CREW_STATE_*_OVERRIDE, so every FM_*_OVERRIDE is
+# removed by pattern rather than by a name list a new override would slip past.
+# Session-start stages, home-summary workers, and state probes also carry
+# call-scoped settings, which are removed by name; documented operator knobs in
+# those families, such as FM_SESSION_START_TIMEOUT or FM_CREW_STATE_RUNS_LIMIT,
+# still reach panes. Bounded poll for the server to report running.
 fm_backend_herdr_server_ensure() {  # <session>
   local session=$1 running out i name
   running=$(fm_backend_herdr_cli "$session" status --json 2>/dev/null | jq -r '.server.running // false' 2>/dev/null)
   [ "$running" = "true" ] && return 0
   (
-    unset FM_HOME CURSOR_AGENT CURSOR_INVOKED_AS CLAUDECODE PI_CODING_AGENT FM_PI_HARNESS GROK_AGENT FM_SUPERVISION_MODEL
+    unset FM_HOME CURSOR_AGENT CURSOR_INVOKED_AS CLAUDECODE PI_CODING_AGENT FM_PI_HARNESS GROK_AGENT FM_SUPERVISION_MODEL \
+      FM_SESSION_START_STAGE_FILE FM_SESSIONSTART_SUPERVISOR_PID FM_HOME_SUMMARY_IF_IDLE FM_HOME_SUMMARY_WORKER_BEST_EFFORT \
+      FM_HOME_SUMMARY_FAILURE_REPORT FM_CREW_STATE_NO_FORGE FM_CREW_STATE_BIN
     for name in $(compgen -e); do
       case "$name" in
-        FM_*_OVERRIDE|FM_CREW_STATE_*|FM_SESSION_START_*|FM_SESSIONSTART_*|FM_HOME_SUMMARY_*) unset "$name" ;;
+        FM_*_OVERRIDE|FM_HOME_SUMMARY_PARENT_*) unset "$name" ;;
       esac
     done
     fm_backend_herdr_cli "$session" server >/dev/null 2>&1 &
