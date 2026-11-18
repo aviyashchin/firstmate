@@ -1,0 +1,28 @@
+===== HEAD b4baf4d9 ({run-worktree}/bin/fm-inbox.sh) =====
+--- S1 note --request-id seen-1 --json (first submission)
+rc=0 {"schema":"fm-inbox-note.v1","outcome":"created","id":"1794972199-OgMkTx","request_id":"seen-1","saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.R2Tjkh/acked/state/inbox/1794972199-OgMkTx.note"}
+--- drain --ack 1794972199-OgMkTx
+rc=0
+handled/: 1794972199-OgMkTx.note
+wakes=1
+--- S1 replay: note --request-id seen-1 --json
+rc=0 {"schema":"fm-inbox-note.v1","outcome":"replay","id":"1794972199-OgMkTx","request_id":"seen-1","saved":true,"announced":true,"acknowledged":true,"path":"/tmp/fm-inbox-live.R2Tjkh/acked/state/inbox/handled/1794972199-OgMkTx.note"}
+--- S2 human replay: note --request-id seen-1
+rc=0
+replay 1794972199-OgMkTx
+  announced then drained
+  firstmate has already acknowledged this note.
+--- S3 announce --json 1794972199-OgMkTx
+rc=0 {"schema":"fm-inbox-note.v1","outcome":"replay","id":"1794972199-OgMkTx","request_id":null,"saved":true,"announced":true,"acknowledged":true,"path":"/tmp/fm-inbox-live.R2Tjkh/acked/state/inbox/handled/1794972199-OgMkTx.note"}
+--- S3 human announce 1794972199-OgMkTx
+rc=0 already-acknowledged 1794972199-OgMkTx
+--- S4 side effects: wakes before=1 after=1; pending notes=0; handled notes=1
+--- S5 regression: announced, NOT acknowledged
+rc=0 {"schema":"fm-inbox-note.v1","outcome":"created","id":"1794972200-58fhO8","request_id":"p-1","saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.R2Tjkh/pending/state/inbox/1794972200-58fhO8.note"}
+replay json rc=0 {"schema":"fm-inbox-note.v1","outcome":"replay","id":"1794972200-58fhO8","request_id":"p-1","saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.R2Tjkh/pending/state/inbox/1794972200-58fhO8.note"}
+replay human rc=0
+replay 1794972200-58fhO8
+  still pending
+  firstmate will pick this up at its next check.
+announce json rc=0 {"schema":"fm-inbox-note.v1","outcome":"replay","id":"1794972200-58fhO8","request_id":null,"saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.R2Tjkh/pending/state/inbox/1794972200-58fhO8.note"}
+wakes=1

@@ -1,0 +1,6 @@
+--- reply 1794972213-HFEAnu --help
+replied 1794972213-HFEAnu
+rc=0
+--- reply 1794972213-HFEAnu 'real answer'
+fm-inbox: reply already recorded for 1794972213-HFEAnu
+rc=1

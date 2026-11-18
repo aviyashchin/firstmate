@@ -1,0 +1,28 @@
+===== BASE 427056c4 (/tmp/fm-base.bKsAKN/bin/fm-inbox.sh) =====
+--- S1 note --request-id seen-1 --json (first submission)
+rc=0 {"schema":"fm-inbox-note.v1","outcome":"created","id":"1794972199-LnNj9e","request_id":"seen-1","saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.EK2LvB/acked/state/inbox/1794972199-LnNj9e.note"}
+--- drain --ack 1794972199-LnNj9e
+rc=0
+handled/: 1794972199-LnNj9e.note
+wakes=1
+--- S1 replay: note --request-id seen-1 --json
+rc=0 {"schema":"fm-inbox-note.v1","outcome":"replay","id":"1794972199-LnNj9e","request_id":"seen-1","saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.EK2LvB/acked/state/inbox/handled/1794972199-LnNj9e.note"}
+--- S2 human replay: note --request-id seen-1
+rc=0
+replay 1794972199-LnNj9e
+  announced then drained
+  firstmate will pick this up at its next check.
+--- S3 announce --json 1794972199-LnNj9e
+rc=0 {"schema":"fm-inbox-note.v1","outcome":"replay","id":"1794972199-LnNj9e","request_id":null,"saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.EK2LvB/acked/state/inbox/handled/1794972199-LnNj9e.note"}
+--- S3 human announce 1794972199-LnNj9e
+rc=0 already-announced 1794972199-LnNj9e
+--- S4 side effects: wakes before=1 after=1; pending notes=0; handled notes=1
+--- S5 regression: announced, NOT acknowledged
+rc=0 {"schema":"fm-inbox-note.v1","outcome":"created","id":"1794972199-BHHoYh","request_id":"p-1","saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.EK2LvB/pending/state/inbox/1794972199-BHHoYh.note"}
+replay json rc=0 {"schema":"fm-inbox-note.v1","outcome":"replay","id":"1794972199-BHHoYh","request_id":"p-1","saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.EK2LvB/pending/state/inbox/1794972199-BHHoYh.note"}
+replay human rc=0
+replay 1794972199-BHHoYh
+  still pending
+  firstmate will pick this up at its next check.
+announce json rc=0 {"schema":"fm-inbox-note.v1","outcome":"replay","id":"1794972199-BHHoYh","request_id":null,"saved":true,"announced":true,"acknowledged":false,"path":"/tmp/fm-inbox-live.EK2LvB/pending/state/inbox/1794972199-BHHoYh.note"}
+wakes=1
